@@ -1,0 +1,49 @@
+--- ./strace.c.orig	2006-02-07 22:01:28.000000000 +0100
++++ ./strace.c	2006-02-07 22:09:20.000000000 +0100
+@@ -1240,7 +1240,7 @@
+ 				}
+ #endif /* __WALL */
+ 				/* No __WALL here.  */
+-				if (waitpid(tcp->pid, &status, 0) < 0) {
++				if (wait4(tcp->pid, &status, 0, NULL) < 0) {
+ 					if (errno != ECHILD) {
+ 						perror("detach: waiting");
+ 						break;
+ibnss*.so.2 \
+			libresolv.so.2 libutil.so.1 libpthread.so.0 \
+			ld-linux.so.2 libnsl.so.1 librt.so.1 ; do
+		cp -a $n $(readlink $n) $TARGET/lib
+		${STRIP:-strip} $TARGET/lib/$(readlink $n)
+	done
+
+	install -d $TARGET/sbin
+	cp -a ../../sbin/ldconfig $TARGET/sbin
+
+	install -d $TARGET/bin
+	cp -a ../../bin/ldd $TARGET/bin
+
+	# for etc stuff, go in the local host
+	cd /etc
+	install -d $TARGET/etc
+	cp -a nsswitch.conf protocols services $TARGET/etc
+
+	cd $D
+install-end
+
+
+htmldesc-begin
+
+<h2>libc</h2>
+
+<p>The C library used in this version of Etlinux is copied
+from the host system where it was compiled.
+
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/lib/libc</code> and other files are copied
+        as instructed in the package __PACKAGE__.
+
+htmllist-end -----------------------------------------------------

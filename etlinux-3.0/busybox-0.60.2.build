@@ -1,0 +1,22 @@
+#
+# Building busybox
+#
+provides: mount
+
+# compiling is easy
+build-begin
+	make
+build-end
+
+# and installing is trivial
+install-begin
+	make install-hardlinks PREFIX=$TARGET
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+htmllist-end -----------------------------------------------------

@@ -1,0 +1,27 @@
+#!/bin/sh
+HOSTARCH=`uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/`
+
+if [ ! -d lib/modules ]; then
+    echo "No modules"
+    exit 0
+fi
+
+
+if [ "$HOSTARCH" = "$ARCH" ]; then
+    if [ -f sbin/depmod ]; then
+	for n in lib/modules/*; do
+	    if [ -d $n ]; then
+		chroot . sbin/depmod -a `basename $n`
+	    fi
+	done
+    else
+	# Hmm... try with host depmod
+	for n in lib/modules/*; do
+	    if [ -d $n ]; then
+	        /sbin/depmod -b `/bin/pwd` -a `basename $n`
+	    fi
+	done
+    fi
+else
+    echo "Can't run depmod when cross-compiling"
+fi

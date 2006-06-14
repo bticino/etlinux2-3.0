@@ -1,0 +1,33 @@
+#
+# Building fileutils
+#
+
+# compiling is easy
+build-begin
+	if ! [ -f config.status ]; then \
+		./configure --host=$TARGETSYSTEM --disable-nls || exit 1 ; \
+	fi
+	make SUBDIRS="lib src"
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	files="chmod cp dd df du ln ls mkdir mknod mv rm rmdir sync touch"
+	for n in $files; do ${STRIP:-strip} src/$n; done
+	for n in $files; do install -c src/$n $TARGET/bin; done
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li>In <code>/bin</code> the following files come from __PACKAGE__:
+	<code>chmod cp dd df du ln ls mkdir mknod mv rm rmdir sync
+	touch</code>.
+	
+
+htmllist-end -----------------------------------------------------

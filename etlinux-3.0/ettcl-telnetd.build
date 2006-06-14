@@ -1,0 +1,223 @@
+# 
+# Building telnetd for etlinux
+#
+requires: ettcl-init
+source: ettcl
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	mkdir -p $TARGET/etc/applications
+	cp  Applications/telnetd/telnetd $TARGET/etc/applications
+install-end
+
+htmldesc-begin
+
+<h2>Telnetd</h2>
+
+<p>The version of <code>telnetd</code> included in this system is the
+one from <code>ettcl-14</code>.
+
+The documentation below comes from Ettcl documentation,
+available from:
+<ul>
+<li><a href="http://ar.linux.it/software/ettcl/">http://ar.linux.it/software/ettcl/#Telnetd</a>
+<li><a href="http://www.linux.it/~rubini/software/ettcl/">http://www.linux.it/~rubini/software/ettcl/#Telnetd</a>
+</ul>
+
+<p>The <var>telnetd</var> application is a daemon that execute Ettcl
+commands running a subprocess per TCP connection. Such subprocess
+is run ina virtual terminal, so you can call <var>vi</var> or other
+full-screen programs from the shell.  The server must be run
+by the superuser (otherwise, it wouldn't be able to open a tty pair),
+and you should use <var>telnetc</var> as a client. The daemon listens
+to port 230 by default.
+
+<p><strong>Warning:</strong> Please note that with <var>telnetd</var> you have unlimited
+access to the server system. The program is meant to be used only for
+debugging and administration. Please be very careful about host access
+configuration to <var>telnetd</var>. However, unlike <var>cmdd</var>, the client
+can't change the <var>options</var> array because each shell runs in a
+different process.
+
+<ul>
+<li><a href="#Telnetd%20Configuration">Telnetd Configuration</a>: 
+<li><a href="#Telnetd%20Features">Telnetd Features</a>: 
+</ul>
+
+<a name="Telnetd%20Configuration"> </a>
+<h3>Telnetd Configuration</h3>
+
+<p>The server is configured by setting items in the <var>options</var> array. 
+These items can be set in Tcl before the server is executed, and if they
+are not set the default is provided by <var>telnetd</var> itself.
+
+<p>These are the configuration variables, and their defaults:
+
+<dl>
+
+<br><dt><code>options(telnetd:cfg)</code>
+<dd>
+
+<p>If the variable is set, then its contents are used as a configuration
+file name. The file is executed using the <var>source</var> command. If
+it is not set, nothing happens.
+
+<br><dt><code>options(telnetd:port)</code>
+<dd>
+
+<p>The TCP port where the server runs. 
+If unset, it defaults to 230 (reminiscent of <var>telnet</var>,
+that runs on port 23).
+
+<br><dt><code>options(telnetd:name)</code>
+<dd>
+The name of this service, used for host access control. 
+If unset, it defaults to "<code>telnetd</code>".
+
+<br><dt><code>options(telnetd:hostsfile)</code>
+<dt><code>options(hostsfile)</code>
+<dd>
+
+<p>The name of the configuration file for host access control. 
+If unset, the former variable default to the value of
+the latter, which in
+turn defaults to <code>/etc/hosts.allow</code>". You can thus elect
+a system-wide default hostsfile, or one for this process alone.
+
+<br><dt><code>options(telnetd:log)</code>
+<dd>
+
+<p>The name of the log file. The variable defaults to
+<code>/var/log/ettcl.log</code>. The log messages being written includes
+the application name, so different servers can share the same log
+file. All write operations are atomic (done with
+a single  <var>write</var> system call).
+
+<br><dt><code>options(telnetd:logfmt)</code>
+<dt><code>options(logfmt)</code>
+<dd>
+
+<p>The format for timestamp strings; the timestamp string is used
+as a leading string for every line written in the log file. 
+The default for the format string is <code>$options(logfmt)</code>,
+which in turn defaults to "<code>%Y-%m-%d %H:%M:%S %Z</code>". In
+an EtLinux system you might want to set <code>options(logfmt)</code>
+from within <code>/etc/init.d/options</code>, so all servers will use
+the same format.
+
+</dl>
+
+<a name="Telnetd%20Features"> </a>
+<h3>Telnetd Features</h3>
+
+<p>The server supports up to two configuration files (to set array elements
+in the <var>options</var> array or run arbitrary Tcl commands), host access
+control based on IP address, TCP and UDP operation.
+
+<ul>
+<li><a href="#Telnetd%20Configuration%20Files">Telnetd Configuration Files</a>: 
+<li><a href="#Telnetd%20Host%20Access">Telnetd Host Access</a>: 
+<li><a href="#The%20Telnet%20Server">The Telnet Server</a>: 
+<li><a href="#Telnetd%20Logs">Telnetd Logs</a>: 
+</ul>
+
+<a name="Telnetd%20Configuration%20Files"> </a>
+<h4>Telnetd Configuration Files</h4>
+
+<p>Whe the server starts up, it reads the configuration file
+<code>/etc/telnetd.cfg</code>, if it exists. It then reads the file
+<var>$options(telnetd:cfg)</var> if the variable is set.
+
+<p>Unlike <var>httpd</var> and <var>cmdd</var>, you would never need to run
+several servers at once, since each client gets its own process
+anyways.
+
+<a name="Telnetd%20Host%20Access"> </a>
+<h4>Telnetd Host Access</h4>
+
+<p>The <var>telnetd</var> process reads <code>/etc/hosts.allow</code> (or whatever
+hostsfile defined by <var>options(telnetd:hostsfile)</var> by calling the
+procedure <var>getAllowedHosts</var> using <var>telnetd</var> as a key (or whatever
+application name defined by <var>options(telnetd:name)</var>). The
+configuration file specifies which hosts are allowed to access the
+various Ettcl services.
+
+<p>For detailed syntax and example use, please refer to Httpd Host Access.
+
+<a name="The%20Telnet%20Server"> </a>
+<h4>The Telnet Server</h4>
+
+<p>The TCP server listens to a TCP socket. When a new connection is
+received, after host access control the daemon opens tty pair and
+forks a child. The child gets its standard files connected to the
+slave tty, and forks an interactive shell.
+
+<p>The parent process continues to monitor the master tty and the network
+socket, copying data from the pty to the network and vice versa as
+needed.
+
+<p>To connect to the <var>telnetd</var> server, you need to use the
+<var>telnetc</var> client, like this:
+
+<pre>telnetc pico 230
+accept TCP: sock5 192.168.16.1 3111
+% free
+        total:    used:    free:  shared: buffers:  cached:
+Mem:   1695744  1540096   155648   176128     8192   126976
+% ps
+  User  PPid  Pid St Size   RSS  Name
+ -------------------------------------
+    0     0     1 S  1048   104 init
+    0     1     2 S     0     0 kflushd
+    0     1     3 S     0     0 kupdate
+    0     1     4 S     0     0 kpiod
+    0     1     5 S     0     0 kswapd
+    0     1     6 S     0     0 rpciod
+    0     1    19 S   808    56 inetd
+    0     1    20 S  1048   104 console-interaction
+    0     1    22 S  1076   148 cmdd
+    0     1    23 S  1072   144 httpd
+    0     1    24 R  1076   196 telnetd
+    0    22    39 S   816    56 cat
+    0    24    41 R  1064   140 -sh(192.168.16.1)
+% exit
+morgana%
+</pre>
+
+<p>The <var>exit</var> command terminates the child process, that is reaped by
+the parent.
+
+<a name="Telnetd%20Logs"> </a>
+<h4>Telnetd Logs</h4>
+
+<p>The <var>telnetd</var> application records the following events to system logs:
+
+<ul>
+
+<li>Login
+When a new tcp connection is opened, the server logs the client's IP address
+and port.
+
+<li>Logout
+When a connection is closed, the server logs the IP address, the port, and the
+duration of the connection.
+
+<li>Rejected clients
+If a client doesn't pass the host access
+control, the event is logged as well.
+
+</ul>
+
+
+
+htmldesc-end
+htmllist-begin
+
+<li><code>/etc/applications/telnetd</code> comes from
+	<code>ettcl-14/Applications/telnetd</code> .
+
+htmllist-end

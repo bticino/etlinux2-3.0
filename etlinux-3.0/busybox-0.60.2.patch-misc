@@ -1,0 +1,20 @@
+--- busybox-0.60.2/mount.c.orig	2005-09-25 08:52:13.000000000 +0200
++++ busybox-0.60.2/mount.c	2005-09-25 08:54:42.000000000 +0200
+@@ -44,6 +44,7 @@
+  */
+ 
+ #include <limits.h>
++#include <sys/param.h> /* PATH_MAX not in limits.h with some cross-toolchains */
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <errno.h>
+--- busybox-0.60.2/umount.c.orig	2005-09-25 08:57:58.000000000 +0200
++++ busybox-0.60.2/umount.c	2005-09-25 08:59:32.000000000 +0200
+@@ -23,6 +23,7 @@
+  */
+ 
+ #include <limits.h>
++#include <sys/param.h> /* PATH_MAX not in limits.h with some cross-toolchains */
+ #include <stdio.h>
+ #include <mntent.h>
+ #include <errno.h>

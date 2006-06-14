@@ -1,0 +1,12 @@
+#!/bin/sh
+
+awk '
+    /^\#/	{next}
+
+    /htmldesc-begin/ {B=1; next}
+    /htmldesc-end/   {B=0}
+
+    B {print}
+
+    {next}
+' $*

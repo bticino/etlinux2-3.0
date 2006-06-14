@@ -1,0 +1,22 @@
+	#
+# This is the build file for "make CONFIG=tmpfs"
+#
+#
+
+# The following line states this is a distribution build-file, not a pkg one
+provides: etlinux
+
+# This must _only_ create a tmpfs and jump in it
+# (libc and ettcl are required by default)
+
+package = tar
+package = gzip
+package = busybox
+
+
+# mini-pivot is the engine for root switching,
+# the init script is in Customizations/tmpfs/ADD/sbin/init
+package = mini-pivot
+
+# bash is not really needed, but it's useful for recovery
+package = bash

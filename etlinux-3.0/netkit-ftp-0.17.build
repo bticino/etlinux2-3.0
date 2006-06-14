@@ -1,0 +1,30 @@
+#
+# Building netkit-ftp
+#
+provides: ftp
+
+# compiling is easy
+build-begin
+	./configure
+	make 
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin 
+	install -c ftp/ftp $TARGET/bin
+	${STRIP:-strip} $TARGET/bin/ftp
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li>the following programs (in <code>/bin</code> and <code>/sbin</code>)
+	come from __PACKAGE__: <code>ping inetd</code>
+
+htmllist-end -----------------------------------------------------

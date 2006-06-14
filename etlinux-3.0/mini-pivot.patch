@@ -1,0 +1,8 @@
+--- ../olet/etlinux-1.1/mini-pivot/Makefile	Tue Feb 11 18:14:03 2003
++++ mini-pivot/Makefile	Wed May  7 14:12:11 2003
+@@ -1,4 +1,4 @@
+-
++VPATH = .
+ CFLAGS = -O -g -Wall
+ ALL = mini-pivot
+ 

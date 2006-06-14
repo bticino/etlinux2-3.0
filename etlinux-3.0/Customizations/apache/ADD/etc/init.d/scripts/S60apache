@@ -1,0 +1,5 @@
+if ![sys_fork] {
+        sys_exec /bin/start_apache
+}
+sys_wait
+

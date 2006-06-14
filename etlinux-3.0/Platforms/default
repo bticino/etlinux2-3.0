@@ -1,0 +1,4 @@
+
+# The default platform for etlinux-3.0 is host-native .
+
+  PLATFORM := host-native 

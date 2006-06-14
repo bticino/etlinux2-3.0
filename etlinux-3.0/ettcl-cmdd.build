@@ -1,0 +1,341 @@
+# 
+# Building cmdd for etlinux
+#
+requires: ettcl-init
+source: ettcl
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	mkdir -p $TARGET/etc/applications
+	cp  Applications/cmdd/cmdd $TARGET/etc/applications
+install-end
+
+htmldesc-begin
+
+<h2>Cmdd</h2>
+
+<p>The version of <code>cmdd</code> included in this system is the
+one from <code>ettcl-14</code>.
+
+The documentation below comes from Ettcl documentation,
+available from:
+<ul>
+<li><a href="http://ar.linux.it/software/ettcl/">http://ar.linux.it/software/ettcl/#Telnetd</a>
+<li><a href="http://www.linux.it/~rubini/software/ettcl/">http://www.linux.it/~rubini/software/ettcl/#Telnetd</a>
+</ul>
+
+
+<p>The <var>cmdd</var> application is a non-forking daemon for executing Ettcl
+commands. It runs on both TCP and UDP sockets. To connect to the TCP
+port you can use <var>telnet</var>, to connect to the UDP port you must use
+<var>cmdc</var>, which requires <var>ettclsh</var> on the client host.
+
+<p><var>cmdd</var> is designed to allow interactive access to small computers,
+that would suffer from running a real forking <var>telnetd</var>.
+
+<p><strong>Warning:</strong> Please note that with <var>cmdd</var> you have unlimited
+access to the server system. The program is meant to be used only for
+debugging and administration. Please be very careful about host access
+configuration to <var>cmdd</var>. Also, please note that each client can
+change the <var>options</var> array and thus redirect log files and to other
+hairy stuff, possibly unwillingly.
+
+<ul>
+<li><a href="#Cmdd%20Configuration">Cmdd Configuration</a>: 
+<li><a href="#Cmdd%20Features">Cmdd Features</a>: 
+<li><a href="#Cmdc">Cmdc</a>: 
+</ul>
+
+<p><hr>
+Node:<a name="Cmdd%20Configuration">Cmdd Configuration</a>,
+Next:<a rel=next href="#Cmdd%20Features">Cmdd Features</a>,
+Previous:<a rel=previous href="#Cmdd">Cmdd</a>,
+Up:<a rel=up href="#Cmdd">Cmdd</a>
+<br>
+
+<h3>Cmdd Configuration</h3>
+
+<p>The server is configured by setting items in the <var>options</var> array. 
+These items can be set in Tcl before the server is executed, and if they
+are not set the default is provided by <var>cmdd</var> itself.
+
+<p>These are the configuration variables, and their defaults:
+
+<dl>
+
+<br><dt><code>options(cmdd:cfg)</code>
+<dd>
+
+<p>If the variable is set, then its contents are used as a configuration
+file name. The file is executed using the <var>source</var> command. If
+it is not set, nothing happens.
+
+<br><dt><code>options(cmdd:port)</code>
+<dd>
+
+<p>The TCP and UDP ports where the server runs. 
+If unset, it defaults to 2300 (reminiscent of <var>telnet</var>,
+that runs on port 23).
+
+<br><dt><code>options(cmdd:name)</code>
+<dd>
+The name of this service, used for host access control. 
+If unset, it defaults to "<code>cmdd</code>".
+
+<br><dt><code>options(cmdd:tcp)</code>
+<dd>
+
+<p>Whether or not the server should listen to the TCP port. The
+variable defaults to 1 and can be set to 0 to prevent the TCP
+socket to be opened.
+
+<br><dt><code>options(cmdd:udp)</code>
+<dd>
+
+<p>Whether or not the server should listen to the UDP port. The
+variable defaults to 1 and can be set to 0 to prevent the UDP
+socket to be opened.
+
+<br><dt><code>options(cmdd:udptimeout)</code>
+<dd>
+
+<p>The timeout value, in seconds, before an UDP connection is
+considered inactive. It defaults to 60. Please note that
+<var>cmdc</var> explicitly closes the connection on exit, so
+you can tell logout events from timeout events. The timeout
+mainly exists in order to release memory associated to inactive
+client connections.
+
+<br><dt><code>options(cmdd:hostsfile)</code>
+<dt><code>options(hostsfile)</code>
+<dd>
+
+<p>The name of the configuration file for host access control. 
+If unset, the former variable default to the value of
+the latter, which in
+turn defaults to <code>/etc/hosts.allow</code>". You can thus elect
+a system-wide default hostsfile, or one for this process alone.
+
+<br><dt><code>options(cmdd:log)</code>
+<dd>
+
+<p>The name of the log file. The variable defaults to
+<code>/var/log/ettcl.log</code>. The log messages being written includes
+the application name, so different servers can share the same log
+file. All write operations are atomic (done with
+a single  <var>write</var> system call).
+
+<br><dt><code>options(cmdd:logfmt)</code>
+<dt><code>options(logfmt)</code>
+<dd>
+
+<p>The format for timestamp strings; the timestamp string is used
+as a leading string for every line written in the log file. 
+The default for the format string is <code>$options(logfmt)</code>,
+which in turn defaults to "<code>%Y-%m-%d %H:%M:%S %Z</code>". In
+an EtLinux system you might want to set <code>options(logfmt)</code>
+from within <code>/etc/init.d/options</code>, so all servers will use
+the same format.
+
+</dl>
+
+<p><hr>
+Node:<a name="Cmdd%20Features">Cmdd Features</a>,
+Next:<a rel=next href="#Cmdc">Cmdc</a>,
+Previous:<a rel=previous href="#Cmdd%20Configuration">Cmdd Configuration</a>,
+Up:<a rel=up href="#Cmdd">Cmdd</a>
+<br>
+
+<h3>Cmdd Features</h3>
+
+<p>The server supports up to two configuration files (to set array elements
+in the <var>options</var> array or run arbitrary Tcl commands), host access
+control based on IP address, TCP and UDP operation.
+
+<ul>
+<li><a href="#Cmdd%20Configuration%20Files">Cmdd Configuration Files</a>: 
+<li><a href="#Cmdd%20Host%20Access">Cmdd Host Access</a>: 
+<li><a href="#The%20TCP%20Server">The TCP Server</a>: 
+<li><a href="#The%20UDP%20Server">The UDP Server</a>: 
+<li><a href="#Cmdd%20Logs">Cmdd Logs</a>: 
+</ul>
+
+<p><hr>
+Node:<a name="Cmdd%20Configuration%20Files">Cmdd Configuration Files</a>,
+Next:<a rel=next href="#Cmdd%20Host%20Access">Cmdd Host Access</a>,
+Previous:<a rel=previous href="#Cmdd%20Features">Cmdd Features</a>,
+Up:<a rel=up href="#Cmdd%20Features">Cmdd Features</a>
+<br>
+
+<h4>Cmdd Configuration Files</h4>
+
+<p>When the server starts up, it reads the configuration file
+<code>/etc/cmdd.cfg</code>, if it exists. It then reads the file
+<var>$options(cmdd:cfg)</var> if the variable is set.
+
+<p>If you might want to run several <var>cmdd</var> servers on several TCP/UDP
+ports, although it isn't as interesting as it is with HTTP.  To run
+several servers, please refer to <a href="#Httpd%20Configuration%20Files">Httpd Configuration Files</a>.
+
+<p><hr>
+Node:<a name="Cmdd%20Host%20Access">Cmdd Host Access</a>,
+Next:<a rel=next href="#The%20TCP%20Server">The TCP Server</a>,
+Previous:<a rel=previous href="#Cmdd%20Configuration%20Files">Cmdd Configuration Files</a>,
+Up:<a rel=up href="#Cmdd%20Features">Cmdd Features</a>
+<br>
+
+<h4>Cmdd Host Access</h4>
+
+<p>The <var>cmdd</var> process reads <code>/etc/hosts.allow</code> (or whatever
+hostsfile defined by <var>options(cmdd:hostsfile)</var> by calling the
+procedure <var>getAllowedHosts</var> using <var>cmdd</var> as a key (or whatever
+application name defined by <var>options(cmdd:name)</var>). The
+configuration file specifies which hosts are allowed to access the
+various Ettcl services.
+
+<p>For detailed syntax and example use, please refer to <a href="#Httpd%20Host%20Access">Httpd Host Access</a>.
+
+<p><hr>
+Node:<a name="The%20TCP%20Server">The TCP Server</a>,
+Next:<a rel=next href="#The%20UDP%20Server">The UDP Server</a>,
+Previous:<a rel=previous href="#Cmdd%20Host%20Access">Cmdd Host Access</a>,
+Up:<a rel=up href="#Cmdd%20Features">Cmdd Features</a>
+<br>
+
+<h4>The TCP Server</h4>
+
+<p>The TCP server listens to a TCP socket and reads input line by line. When the
+concatenation of all pending lines build to a complete Tcl command, the
+server executes the command at global scope.  Input data received from
+different client sockets is never mixed, so you can get multiplexing
+operation even if the server doesn't fork child servers for each active
+connection.
+
+<p>Please note that if the command takes time to execute, the server won't
+be able to server other client in the meanwhile. If you want to
+run such kind of tasks you need to run <var>telnetd</var>.
+
+<p>To connect to the TCP <var>cmdd</var> server, you need to use the
+standard <var>telnet</var> client, like this:
+
+<pre>rudo% telnet morgana 2300
+Trying 192.168.16.1...
+Connected to morgana.systemy.it (192.168.16.1).
+Escape character is '^]'.
+% puts pio
+pio
+% set options(cmdd:port)
+2300
+% exit
+Connection closed by foreign host.
+</pre>
+
+<p>The <var>exit</var> command, as shown, terminates the TCP connection. It
+doesn't, however, terminate the server process. Note that it is possible
+to terminate the server in some other way (by killing it, for example). 
+It's worth repeating that <var>cmdd</var> is designed to be used only as a
+debugging and administration tool for small EtLinux computers (those too
+small to run a forking <var>telnetd</var>).
+
+<p>Please note that with <var>cmdd</var>, communication is
+line-oriented. Therefore you can't run a full-screen editor or anything
+like that in your interactive session. To that aim, please use
+<var>telnetd</var> (see <a href="#Telnetd%20Features">Telnetd Features</a>).
+
+<p><hr>
+Node:<a name="The%20UDP%20Server">The UDP Server</a>,
+Next:<a rel=next href="#Cmdd%20Logs">Cmdd Logs</a>,
+Previous:<a rel=previous href="#The%20TCP%20Server">The TCP Server</a>,
+Up:<a rel=up href="#Cmdd%20Features">Cmdd Features</a>
+<br>
+
+<h4>The UDP Server</h4>
+
+<p>The UDP server listens to an UDP socket. Input is expected to be
+received line-by-line and if the packets have a trailing dot it is
+removed. The trailing dot is added by <var>cmdc</var> in order to preserve
+the trailing newline, tha would otherwise be stripped by the
+implementation of the <var>udp</var> Tcl command (that is text-oriented).
+
+<p>When the concatenation of all pending lines build to a complete Tcl
+command, the server executes the command at global scope.  Input data
+received from different client sockets is never mixed, so you can get
+multiplexing operation for different UDP clients, as well as multiplexing
+TCP and UDP clients.
+
+<p>Please note that if the command takes time to execute, the server won't
+be able to server other client in the meanwhile. If you want to
+run such kind of tasks you need to run <var>telnetd</var>.
+
+<p>To connect to the UDP <var>cmdd</var> server, you need to use <var>cmdc</var>
+or an equivalent program.
+
+<p>The <var>exit</var> command, if sent by an UDP client, terminates the
+UDP connection (i.e., it makes the server release memory associated
+to this client and record a <var>logout</var> event to the log file. 
+If a client doesn't log out, a <var>timeout</var> event is marked after
+the timeout period elapsed.
+
+<p>The same caveat about security as for TCP (see above) applies.  Again,
+<var>cmdd</var>, communication is line-oriented. Therefore you can't run a
+full-screen editor with it.
+
+<p><hr>
+Node:<a name="Cmdd%20Logs">Cmdd Logs</a>,
+Previous:<a rel=previous href="#The%20UDP%20Server">The UDP Server</a>,
+Up:<a rel=up href="#Cmdd%20Features">Cmdd Features</a>
+<br>
+
+<h4>Cmdd Logs</h4>
+
+<p>The <var>cmdd</var> application records the following events to system logs:
+
+<ul>
+
+<li>TCP Login
+When a new tcp connection is opened, the server logs the client's IP address
+and port.
+
+<li>TCP Logout
+When a connection is closed, the server logs the IP address, the port, and the
+duration of the connection.
+
+<li>UDP Login
+When an UDP packet is received by a new client, the IP address and port
+are logged.
+
+<li>UDP Logout
+When a client sends an empty packet (i.e., only the trailing dot), a
+logout event is logged, with IP, port, and duration of the connection.
+
+<li>UDP Timeout
+If a client doesn't send packets for the timeout time lapse (one minute
+by default), a timeout event is logged with IP, port, and duration.
+
+<li>TCP and UDP Rejected clients
+If a client (TCP connection or UDP packet) doesn't pass the host access
+control, the event is logged as well.
+
+</ul>
+
+<p><hr>
+Node:<a name="Cmdc">Cmdc</a>,
+Previous:<a rel=previous href="#Cmdd%20Features">Cmdd Features</a>,
+Up:<a rel=up href="#Cmdd">Cmdd</a>
+<br>
+
+
+
+htmldesc-end
+htmllist-begin
+
+<li><code>/etc/applications/cmdd</code> comes from
+	<code>ettcl-14/Applications/cmdd</code> .
+
+
+
+htmllist-end

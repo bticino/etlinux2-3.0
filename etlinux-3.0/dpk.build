@@ -1,0 +1,47 @@
+#
+# Building dpk
+#
+
+# compile kernel module
+build-begin
+	if [ "$ETLINUX_KERNEL_SOURCE" = "" ] ; then
+		echo "**************************************"
+		echo "*           WARNING                  *"
+		echo "* ETLINUX_KERNEL_SOURCE IS EMPTY     *"
+		echo "* dpk KERNEL MODULE WON'T BE         *"
+		echo "*            COMPILED                *"
+		echo "**************************************"
+	else
+		make ETLINUX_KERNEL_SOURCE=$ETLINUX_KERNEL_SOURCE
+	fi
+build-end
+
+# and installing is trivial (install in /usr/ as per --prefix above)
+install-begin
+	# Trick to avoid marking dpk as built when it actually 
+	# hasn't been built
+	if [ "$ETLINUX_KERNEL_SOURCE" = "" ] ; then
+		rm -f $BUILDDIR/tmp/dpk.built	
+		rm -f dpk.o
+	fi
+	# Install dpk.o only if it exists
+	if [ -f dpk.o ] ; then 
+		install -d $TARGET/lib
+		install -c dpk.o $TARGET/lib
+		install -d $TARGET/etc/init.d/scripts
+		install -c S50logger $TARGET/etc/init.d/scripts
+	fi
+	# Create /dev/printk as a misc device
+	[ -c $TARGET/dev/printk ] || mknod $TARGET/dev/printk c 10 68
+install-end
+
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li>In /lib the <code>dpk.o</code> kernel module comes from __PACKAGE__.
+</li>
+
+htmllist-end -----------------------------------------------------

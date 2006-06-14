@@ -1,0 +1,66 @@
+diff -Naur net-tools-1.60.orig/config.in net-tools-1.60/config.in
+--- net-tools-1.60.orig/config.in	Sun May 21 16:32:12 2000
++++ net-tools-1.60/config.in	Wed May 18 17:45:31 2005
+@@ -50,7 +50,7 @@
+ bool 'UNIX protocol family' HAVE_AFUNIX y
+ bool 'INET (TCP/IP) protocol family' HAVE_AFINET y
+ bool 'INET6 (IPv6) protocol family' HAVE_AFINET6 n
+-bool 'Novell IPX/SPX protocol family' HAVE_AFIPX y
++bool 'Novell IPX/SPX protocol family' HAVE_AFIPX n
+ bool 'Appletalk DDP protocol family' HAVE_AFATALK y
+ bool 'AX25 (packet radio) protocol family' HAVE_AFAX25 y
+ bool 'NET/ROM (packet radio) protocol family' HAVE_AFNETROM y
+@@ -64,23 +64,23 @@
+ *            Device Hardware types.
+ *
+ bool 'Ethernet (generic) support' HAVE_HWETHER y
+-bool 'ARCnet support' HAVE_HWARC y
+-bool 'SLIP (serial line) support' HAVE_HWSLIP y
++bool 'ARCnet support' HAVE_HWARC n
++bool 'SLIP (serial line) support' HAVE_HWSLIP n
+ bool 'PPP (serial line) support' HAVE_HWPPP y
+ bool 'IPIP Tunnel support' HAVE_HWTUNNEL y
+-bool 'STRIP (Metricom radio) support' HAVE_HWSTRIP y
+-bool 'Token ring (generic) support' HAVE_HWTR y
+-bool 'AX25 (packet radio) support' HAVE_HWAX25 y
++bool 'STRIP (Metricom radio) support' HAVE_HWSTRIP n
++bool 'Token ring (generic) support' HAVE_HWTR n
++bool 'AX25 (packet radio) support' HAVE_HWAX25 n
+ bool 'Rose (packet radio) support' HAVE_HWROSE n
+-bool 'NET/ROM (packet radio) support' HAVE_HWNETROM y
+-bool 'X.25 (generic) support' HAVE_HWX25 y
++bool 'NET/ROM (packet radio) support' HAVE_HWNETROM n
++bool 'X.25 (generic) support' HAVE_HWX25 n
+ bool 'DLCI/FRAD (frame relay) support' HAVE_HWFR y
+ bool 'SIT (IPv6-in-IPv4) support' HAVE_HWSIT n
+ bool 'FDDI (generic) support' HAVE_HWFDDI n
+ bool 'HIPPI (generic) support' HAVE_HWHIPPI n
+ bool 'Ash hardware support' HAVE_HWASH n
+ bool '(Cisco)-HDLC/LAPB support' HAVE_HWHDLCLAPB n
+-bool 'IrDA support' HAVE_HWIRDA y
++bool 'IrDA support' HAVE_HWIRDA n
+ bool 'Econet hardware support' HAVE_HWEC n
+ *
+ *
+diff -Naur net-tools-1.60.orig/configure.sh net-tools-1.60/configure.sh
+--- net-tools-1.60.orig/configure.sh	Sat Aug 28 13:21:39 1999
++++ net-tools-1.60/configure.sh	Wed May 18 17:47:21 2005
+@@ -58,9 +58,10 @@
+ #
+ function readln()
+ {
+-  echo -n "$1"
+-  IFS='@' read ans || exit 1
+-  [ -z "$ans" ] && ans=$2
++#  echo -n "$1"
++#  IFS='@' read ans || exit 1
++#  [ -z "$ans" ] && ans=$2
++   ans=$2
+ }
+ 
+ # bool processes a boolean argument
+diff -Naur net-tools-1.60.orig/version.h net-tools-1.60/version.h
+--- net-tools-1.60.orig/version.h	Thu Jan  1 01:00:00 1970
++++ net-tools-1.60/version.h	Wed May 18 17:47:56 2005
+@@ -0,0 +1 @@
++#define RELEASE "net-tools 1.60"

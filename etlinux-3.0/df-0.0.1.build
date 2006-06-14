@@ -1,0 +1,27 @@
+#
+# Building df
+#
+
+# compiling is easy
+build-begin
+	make df
+	${STRIP:-strip} df
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	install	-c df $TARGET/bin
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/bin/df</code> is a standalone mini-df implementation
+	(__PACKAGE__).
+
+htmllist-end -----------------------------------------------------

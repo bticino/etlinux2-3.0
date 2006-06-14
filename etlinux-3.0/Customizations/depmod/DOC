@@ -1,0 +1,7 @@
+
+This customization runs "depmod" for all trees of installed kernel
+modules, and exits gracefully if no module is installed. It runs
+uses the installed copy of /sbin/depmod (if any) or the one in
+the host system.
+
+When cross-compiling it spits a warning message and does nothing.

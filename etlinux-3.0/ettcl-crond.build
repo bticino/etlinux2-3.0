@@ -1,0 +1,130 @@
+# 
+# Building crond for etlinux
+#
+requires: ettcl-init
+source: ettcl
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	mkdir -p $TARGET/etc/applications
+	cp  Applications/crond/crond $TARGET/etc/applications
+	cp  Applications/crond/crontab $TARGET/etc/
+install-end
+
+htmldesc-begin
+
+<h2>Crond</h2>
+
+<p>The version of <code>crond</code> included in this system is the
+one from <code>ettcl-14</code>.
+
+The documentation below comes from Ettcl documentation,
+available from:
+<ul>
+<li><a href="http://ar.linux.it/software/ettcl/">http://ar.linux.it/software/ettcl/#Crond</a>
+<li><a href="http://www.linux.it/~rubini/software/ettcl/">http://www.linux.it/~rubini/software/ettcl/#Crond</a>
+</ul>
+
+<p>The <var>crond</var> program is an implementation of the usual
+<var>cron</var> facility. It awakes every minute and runs any pending command
+according to a single crontab file. If the crontab is modified, you'll
+need to restart the application.
+
+<ul>
+<li><a href="#Crond%20Configuration">Crond Configuration</a>: 
+<li><a href="#Crond%20Features">Crond Features</a>: 
+</ul>
+
+<a name="Crond%20Configuration"> </a>
+<h3>Crond Configuration</h3>
+
+<p>The server is configured by setting items in the <var>options</var> array. 
+These items can be set in Tcl before the server is executed, and if they
+are not set the default is provided by <var>crond</var> itself.
+
+<p>These are the configuration variables, and their defaults:
+
+<dl>
+
+<br><dt><code>options(crond:cfg)</code>
+<dd>
+
+<p>If the variable is set, then its contents are used as a configuration
+file name. The file is executed using the <var>source</var> command. If
+it is not set, nothing happens.
+
+<br><dt><code>options(crond:crontab)</code>
+<dd>
+
+<p>The crontab being used. It defaults to <code>/etc/crontab</code>.
+
+<br><dt><code>options(crond:recalc)</code>
+<dd>
+
+<p>This boolean variable states whether or not <var>crond</var> will
+ask the current time again before going to sleep. If you are
+changing the system date and time by more than a few seconds
+after boot you'll need this, otherwise, <var>crond</var> will either
+sleep for a long time (if you move the date backwards) or will
+loop (if you move the date forward).  If you don't change the
+date after starting the application, or you only fine-tune it
+to an external reference, then you can save cycles by setting
+the variable to 0.
+
+<br><dt><code>options(crond:logfile)</code>
+<dt><code>options(logfile)</code>
+<dd>
+
+<p>The name of the log file. The former variable defaults to
+the latter, and the latter defaults to
+<code>/var/log/ettcl.log</code>. The log messages being written includes
+the application name, so different servers can share the same log
+file. All write operations are atomic (done with
+a single  <var>write</var> system call).
+
+<br><dt><code>options(crond:logfmt)</code>
+<dt><code>options(logfmt)</code>
+<dd>
+
+<p>The format for timestamp strings; the timestamp string is used
+as a leading string for every line written in the log file. 
+The default for the format string is <code>$options(logfmt)</code>,
+which in turn defaults to "<code>%Y-%m-%d %H:%M:%S %Z</code>". In
+an EtLinux system you might want to set <code>options(logfmt)</code>
+from within <code>/etc/init.d/options</code>, so all servers will use
+the same format.
+
+</dl>
+
+
+<a name="Crond%20Features"> </a>
+<h3>Crond Features</h3>
+
+
+<p>The application reads a standard <code>crontab</code> file.
+<p>Empty lines and lines starting with a hash mark are ignored.  Lines that
+look like variable assignment are used to set environment variables; the
+variable name must be made up of uppercase letters and the underscore
+character), spaces and tabs around the <code>=</code> character are ignored,
+and the rest of the line is used as value. Please note that trailing
+spaces in the line are not trimmed.
+
+<p>Other lines in <code>crontab</code> are parsed like the real <var>cron</var> 
+does. 
+But whereas the Unix <var>cron</var> application passes the command to an
+external shell, this <var>crond</var> evaluates the command using the Tcl
+<var>uplevel</var> command. Each command is evaluated in a child process.
+
+
+
+htmldesc-end
+htmllist-begin
+
+<li><code>/etc/applications/crond</code> comes from
+	<code>ettcl-14/Applications/crond</code>.
+
+htmllist-end

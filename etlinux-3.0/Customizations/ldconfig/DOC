@@ -1,0 +1,5 @@
+
+This customization runs "ldconfig" within the target tree,
+if /sbin/ldconfig exists and the system is not being cross-compiled.
+
+When cross-compiling it spits a warning message and does nothing.

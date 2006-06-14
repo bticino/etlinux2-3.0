@@ -1,0 +1,51 @@
+--- php4-4.3.10/configure	Tue Dec 14 18:55:18 2004
++++ /home/develop/btweb/build/php4-4.3.10/configure	Wed Jul 20 11:21:14 2005
+@@ -13466,7 +13466,10 @@
+ 
+ 		
+ 		if test "$cross_compiling" = yes; then
+-    { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
++		cookie_io_functions_t=cookie_io_functions_t
++		have_fopen_cookie=yes
++		fi	
++
+ else
+   cat > conftest.$ac_ext <<EOF
+ #line 13473 "configure"
+@@ -13538,7 +13541,6 @@
+ 		    if test "$have_cookie_io_functions_t" = "yes" ; then
+               cookie_io_functions_t=_IO_cookie_io_functions_t
+               have_fopen_cookie=yes
+-		    fi
+       fi
+ 
+       if test "$have_fopen_cookie" = "yes" ; then
+@@ -14481,7 +14483,7 @@
+ if { (eval echo configure:14482: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   rm -rf conftest*
+   if test "$cross_compiling" = yes; then
+-    { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
++	ac_cv_func_getaddrinfo=yes
+ else
+   cat > conftest.$ac_ext <<EOF
+ #line 14488 "configure"
+@@ -16245,7 +16247,8 @@
+ LIBS="$ac_save_LIBS"
+ 
+ fi
+-if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
++# if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
++if true ; then
+   echo "$ac_t""yes" 1>&6
+   
+     LDFLAGS=$save_old_LDFLAGS
+@@ -16404,7 +16407,8 @@
+ LIBS="$ac_save_LIBS"
+ 
+ fi
+-if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
++# if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
++if true ; then
+   echo "$ac_t""yes" 1>&6
+   
+     LDFLAGS=$save_old_LDFLAGS

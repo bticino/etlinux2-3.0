@@ -1,0 +1,8 @@
+diff -Naur netfiles-1.0.0.orig/etc/services netfiles-1.0.0/etc/services
+--- netfiles-1.0.0.orig/etc/services	Fri Oct 15 12:40:27 1999
++++ netfiles-1.0.0/etc/services	Tue Jul  6 15:16:56 2004
+@@ -1,2 +1,4 @@
++ftp-data        20/tcp
++ftp             21/tcp
+ telnet          23/tcp
+ tftp            69/udp

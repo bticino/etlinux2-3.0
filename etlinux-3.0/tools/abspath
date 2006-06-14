@@ -1,0 +1,4 @@
+#!/bin/sh
+# abspath: finds absolute path given a relative one
+# usage: abspath <RELATIVE_PATH>
+cd $1 && pwd

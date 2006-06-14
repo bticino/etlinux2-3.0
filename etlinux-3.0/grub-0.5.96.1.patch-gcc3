@@ -1,0 +1,64 @@
+--- ./stage2/fsys_reiserfs.c.orig	2003-10-02 18:03:04.000000000 +0200
++++ ./stage2/fsys_reiserfs.c	2003-10-02 18:05:03.000000000 +0200
+@@ -112,7 +112,7 @@
+   /* offset in the log of where to start replay after a crash */
+   __u32 j_first_unflushed_offset;
+   /* mount id to detect very old transactions */
+-  __u32 long j_mount_id;
++  __u32 j_mount_id;
+ };
+ 
+ /* magic string to find desc blocks in the journal */
+@@ -744,7 +744,8 @@
+ 	cache = CACHE (depth);
+       else 
+ 	{
+-	  cache = read_tree_node (INFO->blocks[depth], --depth);
++	  cache = read_tree_node (INFO->blocks[depth], depth-1);
++	  depth--;
+ 	  if (! cache)
+ 	    return 0;
+ 	}
+--- ./stage2/cmdline.c.orig	2003-10-02 17:07:31.000000000 +0200
++++ ./stage2/cmdline.c	2003-10-02 17:08:19.000000000 +0200
+@@ -50,10 +50,10 @@
+ void
+ print_cmdline_message (int forever)
+ {
+-  printf ("\
+- [ Minimal BASH-like line editing is supported.  For the first word, TAB
+-   lists possible command completions.  Anywhere else TAB lists the possible
+-   completions of a device/filename.%s ]\n",
++  printf ("\n"
++" [ Minimal BASH-like line editing is supported.  For the first word, TAB\n"
++"   lists possible command completions.  Anywhere else TAB lists the possible\n"
++"   completions of a device/filename.%s ]\n",
+ 	  (forever ? "" : "  ESC at any time exits."));
+ }
+ 
+--- ./util/mbchk.c.orig	2003-10-02 18:02:14.000000000 +0200
++++ ./util/mbchk.c	2003-10-02 18:02:16.000000000 +0200
+@@ -39,15 +39,14 @@
+   if (status)
+     fprintf (stderr, "Try ``mbchk --help'' for more information.\n");
+   else
+-    printf ("Usage: mbchk [OPTION]... [FILE]...
+-Check if the format of FILE complies with the Multiboot Specification.
+-
+-  -q, --quiet                suppress all normal output
+-  -h, --help                 display this help and exit
+-  -v, --version              output version information and exit.
+-
+-Report bugs to <bug-grub@gnu.org>.
+-");
++    printf ("Usage: mbchk [OPTION]... [FILE]...\n"
++"Check if the format of FILE complies with the Multiboot Specification.\n"
++"\n"
++"  -q, --quiet                suppress all normal output\n"
++"  -h, --help                 display this help and exit\n"
++"  -v, --version              output version information and exit.\n"
++"\n"
++"Report bugs to <bug-grub@gnu.org>.\n");
+ 
+   exit (status);
+ }

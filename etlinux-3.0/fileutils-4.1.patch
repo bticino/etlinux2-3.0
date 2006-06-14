@@ -1,0 +1,19 @@
+diff -Naur fileutils-4.1.orig/configure fileutils-4.1/configure
+--- fileutils-4.1.orig/configure	Sun Apr 29 10:26:09 2001
++++ fileutils-4.1/configure	Thu May 19 12:09:21 2005
+@@ -17792,6 +17792,7 @@
+ #define ARGMATCH_DIE_DECL extern void usage ()
+ EOF
+ 
++if false ; then
+         echo "$as_me:17795: checking whether setvbuf arguments are reversed" >&5
+ echo $ECHO_N "checking whether setvbuf arguments are reversed... $ECHO_C" >&6
+ if test "${ac_cv_func_setvbuf_reversed+set}" = set; then
+@@ -17850,6 +17851,7 @@
+ EOF
+ 
+ fi
++fi # if false 
+ 
+   # used by sleep and shred
+   # Solaris 2.5.1 needs -lposix4 to get the clock_gettime function.

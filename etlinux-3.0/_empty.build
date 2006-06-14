@@ -1,0 +1,17 @@
+#
+# An empty package, used to provide source to non-compilable packages
+#
+
+build-begin
+	true
+build-end
+
+install-begin
+	true
+install-end
+
+htmldesc-begin
+htmldesc-end
+
+htmllist-begin
+htmllist-end

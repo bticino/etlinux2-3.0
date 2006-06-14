@@ -1,0 +1,256 @@
+--- ./Makefile.orig	Fri Sep 27 10:01:00 2002
++++ ./Makefile	Fri Sep 27 10:01:04 2002
+@@ -79,10 +79,10 @@
+ 
+ # If you are running a cross compiler, you may want to set this
+ # to something more interesting, like "powerpc-linux-".
+-CROSS =
+-CC = $(CROSS)gcc
+-AR = $(CROSS)ar
+-STRIPTOOL = $(CROSS)strip
++#CROSS =
++#CC = $(CROSS)gcc
++#AR = $(CROSS)ar
++STRIPTOOL := $(STRIP)
+ 
+ # To compile vs uClibc, just use the compiler wrapper built by uClibc...
+ # Everything should compile and work as expected these days...
+--- ./Config.h.orig	Fri Sep 27 11:09:23 2002
++++ ./Config.h	Fri Sep 27 11:26:43 2002
+@@ -8,22 +8,22 @@
+ //
+ // BusyBox Applications
+ //#define BB_ADJTIMEX
+-//#define BB_AR
+-//#define BB_ASH
++#define BB_AR
++#define BB_ASH
+ #define BB_BASENAME
+ #define BB_CAT
+ #define BB_CHGRP
+ #define BB_CHMOD
+ #define BB_CHOWN
+ #define BB_CHROOT
+-#define BB_CHVT
++//#define BB_CHVT
+ #define BB_CLEAR
+-//#define BB_CMP
++#define BB_CMP
+ #define BB_CP
+-//#define BB_CPIO
++#define BB_CPIO
+ #define BB_CUT
+ #define BB_DATE
+-//#define BB_DC
++#define BB_DC
+ #define BB_DD
+ //#define BB_DEALLOCVT
+ #define BB_DF
+@@ -37,29 +37,29 @@
+ //#define BB_DUMPKMAP
+ #define BB_ECHO
+ #define BB_ENV
+-//#define BB_EXPR
++#define BB_EXPR
+ //#define BB_FBSET
+ //#define BB_FDFLUSH
+ #define BB_FIND
+-#define BB_FREE
++//#define BB_FREE
+ //#define BB_FREERAMDISK
+ //#define BB_FSCK_MINIX
+ //#define BB_GETOPT
+ #define BB_GREP
+-#define BB_GUNZIP
+-#define BB_GZIP
+-#define BB_HALT
++//#define BB_GUNZIP
++//#define BB_GZIP
++//#define BB_HALT
+ #define BB_HEAD
+ //#define BB_HOSTID
+-//#define BB_HOSTNAME
++#define BB_HOSTNAME
+ //#define BB_HUSH
+ #define BB_ID
+ //#define BB_IFCONFIG
+-#define BB_INIT
++//#define BB_INIT
+ //#define BB_INSMOD
+ #define BB_KILL
+ #define BB_KILLALL
+-#define BB_KLOGD
++//#define BB_KLOGD
+ //#define BB_LASH
+ //#define BB_LENGTH
+ #define BB_LN
+@@ -69,57 +69,57 @@
+ #define BB_LOGGER
+ //#define BB_LOGNAME
+ #define BB_LS
+-#define BB_LSMOD
++//#define BB_LSMOD
+ //#define BB_MAKEDEVS
+ //#define BB_MD5SUM
+ #define BB_MKDIR
+-//#define BB_MKFIFO
++#define BB_MKFIFO
+ //#define BB_MKFS_MINIX
+ #define BB_MKNOD
+ #define BB_MKSWAP
+ //#define BB_MKTEMP
+-#define BB_MODPROBE
++//#define BB_MODPROBE
+ #define BB_MORE
+ #define BB_MOUNT
+-#define BB_MSH
++//#define BB_MSH
+ //#define BB_MT
+ #define BB_MV
+ //#define BB_NC
+-//#define BB_NSLOOKUP
++#define BB_NSLOOKUP
+ #define BB_PIDOF
+-//#define BB_PING
++#define BB_PING
+ //#define BB_PIVOT_ROOT
+-#define BB_POWEROFF
++//#define BB_POWEROFF
+ //#define BB_PRINTF
+ #define BB_PS
+ #define BB_PWD
+ //#define BB_RDATE
+ //#define BB_READLINK
+-#define BB_REBOOT
+-//#define BB_RENICE
++//#define BB_REBOOT
++#define BB_RENICE
+ #define BB_RESET
+ #define BB_RM
+ #define BB_RMDIR
+ //#define BB_RMMOD
+-//#define BB_ROUTE
++#define BB_ROUTE
+ //#define BB_RPM2CPIO
+ #define BB_SED
+ //#define BB_SETKEYCODES
+ #define BB_SLEEP
+ #define BB_SORT
+-//#define BB_STTY
++#define BB_STTY
+ #define BB_SWAPONOFF
+ #define BB_SYNC
+-#define BB_SYSLOGD
++//#define BB_SYSLOGD
+ #define BB_TAIL
+-#define BB_TAR
+-//#define BB_TEE
+-//#define BB_TEST
+-//#define BB_TELNET
+-//#define BB_TFTP
++//#define BB_TAR
++#define BB_TEE
++#define BB_TEST
++#define BB_TELNET
++#define BB_TFTP
+ #define BB_TOUCH
+-//#define BB_TR
+-//#define BB_TRACEROUTE
++#define BB_TR
++#define BB_TRACEROUTE
+ #define BB_TRUE_FALSE
+ #define BB_TTY
+ //#define BB_UNIX2DOS
+@@ -130,11 +130,11 @@
+ #define BB_UNAME
+ //#define BB_UPDATE
+ #define BB_UPTIME
+-//#define BB_USLEEP
+-//#define BB_VI
++#define BB_USLEEP
++#define BB_VI
+ //#define BB_WATCHDOG
+ #define BB_WC
+-//#define BB_WGET
++#define BB_WGET
+ #define BB_WHICH
+ #define BB_WHOAMI
+ #define BB_XARGS
+@@ -151,16 +151,16 @@
+ //
+ // If you enabled one or more of the shells, you may select which one
+ // should be run when sh is invoked:
+-//#define BB_FEATURE_SH_IS_ASH
++#define BB_FEATURE_SH_IS_ASH
+ //#define BB_FEATURE_SH_IS_HUSH
+ //#define BB_FEATURE_SH_IS_LASH
+-#define BB_FEATURE_SH_IS_MSH
++//#define BB_FEATURE_SH_IS_MSH
+ //
+ // BusyBox will, by default, malloc space for its buffers.  This costs code
+ // size for the call to xmalloc.  You can use the following feature to have
+ // them put on the stack.  For some very small machines with limited stack
+ // space, this can be deadly.  For most folks, this works just fine...
+-//#define BB_FEATURE_BUFFERS_GO_ON_STACK
++#define BB_FEATURE_BUFFERS_GO_ON_STACK
+ // The third alternative for buffer allocation is to use BSS.  This works
+ // beautifully for computers with a real MMU (and OS support), but wastes
+ // runtime RAM for uCLinux.  This behavior was the only one available for
+@@ -179,7 +179,7 @@
+ //#define BB_FEATURE_USE_DEVPS_PATCH
+ //
+ // show verbose usage messages
+-//#define BB_FEATURE_VERBOSE_USAGE
++#define BB_FEATURE_VERBOSE_USAGE
+ //
+ // Use termios to manipulate the screen ('more' is prettier with this on)
+ //#define BB_FEATURE_USE_TERMIOS
+@@ -200,7 +200,7 @@
+ #define BB_FEATURE_LS_SORTFILES
+ //
+ // enable ls -R
+-#define BB_FEATURE_LS_RECURSIVE
++//#define BB_FEATURE_LS_RECURSIVE
+ //
+ // enable ls -L
+ #define BB_FEATURE_LS_FOLLOWLINKS
+@@ -234,7 +234,7 @@
+ #define BB_FEATURE_MOUNT_LOOP
+ //
+ // Enable support for a real /etc/mtab file instead of /proc/mounts
+-//#define BB_FEATURE_MTAB_SUPPORT
++#define BB_FEATURE_MTAB_SUPPORT
+ //
+ // Enable support for mounting remote NFS volumes. 
+ // You may need to mount with "-o nolock" if you are
+@@ -242,7 +242,7 @@
+ //
+ // If you are using uClibc, be sure that you've already compiled
+ // uClibc with INCLUDE_RPC=true (contained in the Config file)
+-//#define BB_FEATURE_NFSMOUNT
++#define BB_FEATURE_NFSMOUNT
+ //
+ // Enable support forced filesystem unmounting 
+ // (i.e., in case of an unreachable NFS system).
+@@ -352,7 +352,7 @@
+ //#define BB_FEATURE_CLEAN_UP
+ //
+ // Support for human readable output by ls, du, etc.(example 13k, 23M, 235G)
+-#define BB_FEATURE_HUMAN_READABLE
++//#define BB_FEATURE_HUMAN_READABLE
+ //
+ // Support for the find -type option.
+ #define BB_FEATURE_FIND_TYPE
+@@ -364,10 +364,10 @@
+ #define BB_FEATURE_FIND_MTIME
+ //
+ // Support for the -A -B and -C context flags in grep
+-//#define BB_FEATURE_GREP_CONTEXT
++#define BB_FEATURE_GREP_CONTEXT
+ //
+ // Support for the EGREP applet (alias to the grep applet)
+-//#define BB_FEATURE_GREP_EGREP_ALIAS
++#define BB_FEATURE_GREP_EGREP_ALIAS
+ //
+ // Tell tftp what commands that should be supported.
+ #define BB_FEATURE_TFTP_PUT

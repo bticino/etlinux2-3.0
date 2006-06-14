@@ -1,0 +1,29 @@
+#
+# Building gdbm-1.7.3
+#
+
+# compiling is easy
+build-begin
+	./configure --host=$TARGETSYSTEM
+	mkdir shared
+	cd shared ; \
+        make -f ../Makefile VPATH=".." srcdir=".." \
+        CFLAGS="-O2 -g -Wall -fPIC -D_REENTRANT" 
+        ${CC-gcc} -shared -Wl,-soname,libgdbm.so.1 -o libgdbm.so.1.7.3 \
+	$(ls *.o) 
+	${STRIP-strip} libgdbm.so.1.7.3
+build-end
+
+# and installing is trivial (install in /usr/ as per --prefix above)
+install-begin
+	install -d $TARGET/lib
+	cp shared/libgdbm.so.1.7.3 $TARGET/lib
+	cd $TARGET/lib/ && ln -f -s libgdbm.so.1.7.3 libgdbm.so.1
+install-end
+
+htmldesc-begin
+htmldesc-end
+
+# No html
+htmllist-begin ---------------------------------------------------
+htmllist-end -----------------------------------------------------

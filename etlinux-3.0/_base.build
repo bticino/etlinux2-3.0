@@ -1,0 +1,10 @@
+#
+# Simple build script for a fake base tree
+#
+build-begin
+	# Nothing to build here, we just have an empty directory tree
+build-end
+
+install-begin
+	find . -depth -print | cpio -pdamu --unconditional $TARGET
+install-end

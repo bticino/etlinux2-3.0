@@ -1,0 +1,31 @@
+#
+# Building ncurses
+#
+
+# compiling is easy
+build-begin
+	export CC=${CC-:gcc} CXX=${CXX-:c++} AR=${AR-:ar} \
+	RANLIB=${RANLIB:-ranlib} HOSTCC=gcc 
+	./configure --without-ada --with-shared --host=$TARGETSYSTEM
+	make CC="$CC" CXX="$CXX" HOSTCC=gcc
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/lib
+	cd lib && \
+	for n in libncurses.so.5 ; do
+		cp -a $n $(readlink $n) $TARGET/lib
+		${STRIP:-strip} $TARGET/lib/$(readlink $n)
+	done
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+htmllist-end -----------------------------------------------------
+

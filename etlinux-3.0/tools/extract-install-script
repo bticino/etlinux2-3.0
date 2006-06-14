@@ -1,0 +1,12 @@
+#!/bin/sh
+
+awk '
+    /^\#/	{next}
+
+    /install-begin/ {B=1; next}
+    /install-end/   {B=0}
+
+    B {print}
+
+    {next}
+' $*

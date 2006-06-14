@@ -1,0 +1,71 @@
+diff -Naur util-linux-2.11n.orig/MCONFIG util-linux-2.11n/MCONFIG
+--- util-linux-2.11n.orig/MCONFIG	Wed May 18 17:10:55 2005
++++ util-linux-2.11n/MCONFIG	Wed May 18 17:37:35 2005
+@@ -16,12 +16,12 @@
+ # If HAVE_PAM is set to "yes", then login, chfn, chsh, and newgrp
+ # will use PAM for authentication. Additionally, passwd will not be
+ # installed as it is not PAM aware.
+-HAVE_PAM=yes
++HAVE_PAM=no
+ 
+ # If HAVE_SHADOW is set to "yes", then login, chfn, chsh, newgrp, passwd,
+ # and vipw will not be built or installed from the login-utils
+ # subdirectory.  
+-HAVE_SHADOW=yes
++HAVE_SHADOW=no
+ 
+ # If HAVE_PASSWD is set to "yes", then passwd will not be built or
+ # installed from the login-utils subdirectory (but login, chfn, chsh,
+@@ -122,13 +122,13 @@
+ 
+ # Set HAVE_SLANG to yes if you have slang (and prefer to use that for cfdisk)
+ # (If neither HAVE_NCURSES nor HAVE_SLANG is defined, cfdisk is not made.)
+-HAVE_SLANG=yes
++# HAVE_SLANG=yes
+ 
+ # There is a subdirectory /usr/include/slang containing slcurses.h
+ # SLANGFLAGS=-I/usr/include/slang
+ # No such subdirectory - slcurses.h lives in /usr/include
+ #   (no extra definition required).
+-LIBSLANG=-lslang
++# LIBSLANG=-lslang
+ 
+ #
+ # Paths used for compilation (not all are actually used, see CFLAGS below)
+diff -Naur util-linux-2.11n.orig/configure util-linux-2.11n/configure
+--- util-linux-2.11n.orig/configure	Tue Jun 19 20:27:24 2001
++++ util-linux-2.11n/configure	Wed May 18 16:47:42 2005
+@@ -284,6 +284,7 @@
+ main(){ exit(0); }
+ " > conftest.c
+ eval $compile
++if false ; then # Etlinux: don't need tqueue.h
+ if test -s conftest && ./conftest 2>/dev/null; then
+ 	echo "You don't need <linux/tqueue.h>"
+ else
+@@ -291,12 +292,14 @@
+ 	echo "You need <linux/tqueue.h>"
+ fi
+ rm -f conftest conftest.c
++fi
+ 
+ #
+ # 2. How is [n]curses installed?
+ #
+ test_curses_h=0
+ have_ncurses=1
++if false ; then # Etlinux: ncurses always installed
+ if ! ./testincl "term.h"; then
+ 	have_ncurses=0
+ elif ./testincl -q "ncurses/curses.h"; then
+@@ -315,6 +318,10 @@
+ 	test_curses_h=1
+ else
+ 	have_ncurses=0
++fi
++else  # Etlinux
++echo "HAVE_NCURSES=yes" >> make_include
++echo "You have ncurses (etlinux)"
+ fi
+ #
+ # If we found a curses.h, test whether it is ncurses

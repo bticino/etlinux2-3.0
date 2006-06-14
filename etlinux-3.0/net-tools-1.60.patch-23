@@ -1,0 +1,14 @@
+diff -Naur net-tools-1.60.orig/lib/x25_sr.c net-tools-1.60/lib/x25_sr.c
+--- net-tools-1.60.orig/lib/x25_sr.c	Sat May 20 15:38:10 2000
++++ net-tools-1.60/lib/x25_sr.c	Fri May 20 14:25:10 2005
+@@ -41,6 +41,10 @@
+ 
+ #include "net-features.h"
+ 
++#if ((__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 3))
++typedef struct x25_address x25_address;
++#endif 
++
+ extern     struct aftype   x25_aftype;
+ 
+ static int skfd = -1;

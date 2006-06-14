@@ -1,0 +1,23 @@
+--- openssl-0.9.7g/Configure.orig	Mon Jul 18 12:16:21 2005
++++ openssl-0.9.7g/Configure	2006-03-12 23:31:12.000000000 +0100
+@@ -476,6 +476,9 @@
+ # endian neutral, but ./config is free to throw in -D[BL]_ENDIAN...
+ "linux-elf-arm","gcc:-DTERMIO -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG::::::::::dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+ 
++# Etlinux for arm
++"arm-generic-linux","$ENV{CC}:-DTERMIO -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG::::::::::dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
++
+ # SCO/Caldera targets.
+ #
+ # Originally we had like unixware-*, unixware-*-pentium, unixware-*-p6, etc.
+--- openssl-0.9.7g/Makefile.org.orig	Mon Jul 18 12:16:31 2005
++++ openssl-0.9.7g/Makefile.org	Mon Jul 18 12:18:10 2005
+@@ -176,7 +176,7 @@
+ # we might set SHLIB_MARK to '$(SHARED_LIBS)'.
+ SHLIB_MARK=
+ 
+-DIRS=   crypto fips ssl $(SHLIB_MARK) sigs apps doc tools
++DIRS=   crypto fips ssl $(SHLIB_MARK) sigs apps tools
+ SHLIBDIRS= crypto ssl
+ 
+ # dirs in crypto to build

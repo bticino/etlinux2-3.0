@@ -1,0 +1,38 @@
+# Build php4-4.3.10 
+requires: libc
+requires: apache_modssl
+requires: openssl
+provides: php4
+
+build-begin
+	if [ ! -f $BUILDDIR/apache-1.3.33/src/support/apxs ]; then
+	   echo "Please compile apache in $BUILDDIR/apache-1.3.33 first" >& 2
+	   exit 1
+        fi
+	if [ ! -f $BUILDDIR/openssl-0.9.7g/libssl.so.0.9.7 ]; then
+	   echo "Please compile openssl in $BUILDDIR/openssl-0.9.7g first" >& 2
+	   exit 1
+        fi
+	CC=$CC CPP="$CC -E" LD=$LD AR=$AR NM=${CROSS_COMPILE}nm \
+	./configure --with-apxs=$BUILDDIR/apache-1.3.33/src/support/apxs \
+	--enable-force-cgi-redirect --with-openssl=shared,$BUILDDIR/openssl-0.9.7g --host=$TARGETSYSTEM
+	CC=$CC CPP="$CC -E" LD=$LD AR=$AR NM=${CROSS_COMPILE}nm make
+build-end
+
+install-begin
+	install -d $TARGET/bin
+	install -c sapi/cli/php $TARGET/bin
+	install -d $TARGET/lib
+	install -c modules/openssl.so $TARGET/lib/
+	modroot=$TARGET/usr/lib/apache/1.3
+	install -c libs/libphp4.so $modroot/
+	install -d $modroot
+	(cd sapi/apache && \
+	  for m in mod_php4.o php_apache.o sapi_apache.o ; do \
+		cp $m `readlink $m` $modroot/ ; \
+		${STRIP:-strip} $modroot/`readlink $m` ; 
+	  done)
+	${STRIP:-strip} $TARGET/bin/php
+	${STRIP:-strip} $TARGET/lib/openssl.so
+	${STRIP:-strip} $modroot/libphp4.so
+install-end

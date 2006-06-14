@@ -1,0 +1,30 @@
+# 
+# Building udplogs for etlinux
+#
+requires: ettcl-init
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	mkdir -p $TARGET/etc/applications
+	cp  udplogs $TARGET/etc/applications
+install-end
+
+htmldesc-begin
+
+<h2>udplogs</h2>
+
+<p>Udplogs reads <code>proc/kmsg</code> and sends kernel messages to a 
+configurable destination using the UDP protocol. 
+See the etlinux manual for more details.</p>
+
+htmldesc-end
+htmllist-begin
+
+<li><code>/etc/applications/udplogs</code> comes from
+	<code>udplogs</code> .
+
+htmllist-end

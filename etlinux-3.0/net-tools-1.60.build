@@ -1,0 +1,26 @@
+#
+# Building net-tools
+#
+
+build-begin
+	# The configure script is patch to avoid interaction.
+	make config
+	make ifconfig route netstat
+build-end
+
+install-begin
+	install -d $TARGET/sbin
+	install	-c ifconfig route netstat $TARGET/sbin
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/sbin/ifconfig</code>, <code>/sbin/netstat</code>
+	and <code>/sbin/route</code> come from __PACKAGE__.
+
+htmllist-end -----------------------------------------------------

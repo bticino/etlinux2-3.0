@@ -1,0 +1,11 @@
+--- ./install.sh.orig	Tue May 13 17:19:48 2003
++++ ./install.sh	Tue May 13 17:19:58 2003
+@@ -45,7 +45,7 @@
+ 		;;
+ 	    esac
+ 	fi
+-	echo "  $prefix$i -> $bb_path"
++	#echo "  $prefix$i -> $bb_path"
+ 	ln $linkopts $bb_path $prefix$i || exit 1
+ done
+ 

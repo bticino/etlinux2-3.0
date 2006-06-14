@@ -1,0 +1,13 @@
+#!/bin/sh
+
+HOSTARCH=`uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/`
+
+if [ "$HOSTARCH" = "$ARCH" ]; then
+    if [ -f sbin/ldconfig ]; then
+	./sbin/ldconfig -r .
+    else
+	echo "No sbin/ldconfig in the target tree"
+    fi
+else
+	echo "Can't run ldconfig when cross-compiling"
+fi

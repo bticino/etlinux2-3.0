@@ -1,0 +1,30 @@
+#
+# Building tar
+#
+
+# compiling is easy
+build-begin
+	host=`uname -m  | sed -e s/i.86/i386/ \
+		-e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/`
+	./configure --disable-largefile --disable-nls \
+		--host=$host --target=$TARGETSYSTEM
+	make
+	${STRIP:-strip} src/tar
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	install	-c src/tar $TARGET/bin
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/bin/tar</code> comes from __PACKAGE__.
+
+htmllist-end -----------------------------------------------------

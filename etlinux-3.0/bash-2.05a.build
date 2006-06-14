@@ -1,0 +1,35 @@
+#
+# Building bash
+#
+requires: ncurses
+
+# compiling is easy
+build-begin
+	export CC=${CC:-gcc}
+	if [ -f Makefile ] ; then \
+		true ; \
+	else \
+		./configure --host=$TARGETSYSTEM ; \
+	fi
+	make
+	$STRIP bash
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	install -c bash $TARGET/bin
+	ln -fs bash $TARGET/bin/sh
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/bin/bash</code> comes from __PACKAGE__. <code>/bin/sh</code>
+	is a symbolic links to <code>bash</code>.
+
+htmllist-end -----------------------------------------------------

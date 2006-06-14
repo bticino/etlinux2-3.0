@@ -1,0 +1,60 @@
+#
+# Building grub
+#
+
+# compiling is easy
+build-begin
+	./configure  --enable-diskless --without-curses --enable-ne --enable-ns8390 --enable-rtl8139
+	make
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/boot/grub
+	install -d $TARGET/sbin
+	install -c stage1/stage1 stage2/stage2 $TARGET/boot/grub
+	install -c grub/grub $TARGET/sbin
+	echo -e '# Grub menu file template
+
+    timeout 5
+    
+    # disk
+    title etlinux
+      root (hd0,0)
+      kernel <KERNEL_IMAGE_PATH> root=<ROOT> ip=bootp vga=1
+    
+    # nfs root file system
+    title nfsroot
+      root (hd0,0)
+      kernel <KERNEL_IMAGE_PATH> root=/dev/nfs nfsroot=<ROOT> ip=bootp vga=1 rw
+    
+    # diskless boot
+    title diskless
+      bootp
+      root (nd)
+      configfile /boot/tftpboot/menu.generic' > $TARGET/boot/grub/menu.lst
+
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin	
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+	
+	<li><code>/sbin/grub</code> comes from grub-0.5.96.
+	<code>stage1</code> and <code>stage2</code> are copied to 
+	<code>/boot/grub</code>.
+	<code>grub</code> is copied to <code>/sbin</code>
+	A template grub menu file (<code>menu.lst</code>) is 
+	copied to /boot/grub
+
+htmllist-end -----------------------------------------------------
+
+
+
+
+
+
+

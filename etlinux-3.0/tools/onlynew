@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# This is used to avoid overwriting files in the target directory, in a pipe
+# between find and cpio when installing from a .bin directory
+
+if [ $# -ne 1 ]; then
+    echo "$0: must receive TARGETDIR as a single argument" >& 2
+    exit 1
+fi
+
+cd $1
+while read f; do
+	test -e $f && continue
+	echo $f
+done

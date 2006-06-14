@@ -1,0 +1,15 @@
+
+build-begin
+	cp $TARGET.html html/descr.html
+build-end
+
+# and installing is trivial
+install-begin
+	find . -depth -print | cpio -pdamvu $TARGET
+install-end
+
+htmldesc-begin
+htmldesc-end
+
+htmllist-begin ---------------------------------------------------
+htmllist-end -----------------------------------------------------

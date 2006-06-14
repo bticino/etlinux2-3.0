@@ -1,0 +1,8 @@
+
+# Check whether TMPFS_TREE has been defined
+[ "$TMPFS_TREE" != "" ] || \
+{ echo "Please define TMPFS_TREE first" ; exit 1 ; }
+
+tar czv -C $BUILDDIR/Trees/$TMPFS_TREE -f tree.tar.gz  .  || \
+{ echo "Couldn't make tarfile from $TMPFS_TREE" ; exit 1 ; }
+

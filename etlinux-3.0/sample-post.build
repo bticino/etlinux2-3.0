@@ -1,0 +1,43 @@
+#
+# Building sample-post for ettcl-smtpd
+#
+requires: ettcl-smtp
+source: ettcl
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	install -d $TARGET/var/spool/mail
+	cp Applications/smtpd/sample-post/*.post $TARGET/var/spool/mail
+install-end
+
+htmldesc-begin
+<h2>Sample-post</h2>
+<p> The version of <code>sample-post</code> included in this system
+includes scripts from <code>ettcl-14</code>.
+
+<p>Please refer to <a href="#Smtpd%20User%20Validation">
+Smtpd User Validation</a> for further information.
+
+<p>The following scripts (from Ettcl) have been provided:
+<ul>
+<li><code>crontab-request.post</code>: return the system's crontable stored in 
+<code>options(crond:crontab)</code>.
+<li><code>crontab-rest.post</code>: set a new system's crontable by using 
+message's body.
+<li><code>status-request.post</code>: return the system status.
+<li><code>to-file.post</code>: send the message body to a file specified into
+the subject.
+</ul>
+
+
+htmldesc-end
+
+htmllist-begin ---------------------------------------------------
+
+<li><code>/var/spool/mail/*.post</code> come from __PACKAGE__.
+
+htmllist-end -----------------------------------------------------

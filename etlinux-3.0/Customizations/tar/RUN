@@ -1,0 +1,7 @@
+# Make tar of target tree
+# set -x
+
+[ "$ETLINUX_TAR" = "" ] && ETLINUX_TAR=$CONFIG.tar.gz
+
+tar czf $BUILDDIR/Trees/$ETLINUX_TAR -C $BUILDDIR/Trees $CONFIG  || \
+{ echo "Couldn't make tarfile from $BUILDDIR/Trees/$CONFIG" ; exit 1 ; } 

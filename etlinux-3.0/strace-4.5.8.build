@@ -1,0 +1,24 @@
+#
+# Building strace
+#
+# compiling is easy
+build-begin
+	./configure --host=$TARGETSYSTEM
+	make CC=$CC || exit 1
+	${STRIP:-strip} insmod/insmod || exit 1
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	install	-c strace $TARGET/bin
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+htmllist-end -----------------------------------------------------

@@ -1,0 +1,42 @@
+#
+# This is the default build file for etlinux
+#
+#
+
+# The following line states this is a distribution build-file, not a pkg one
+provides: etlinux
+
+###### Mandatory stuff (libc and ettcl are required by default)
+package = ettcl-init
+
+###### Not really mandatory, but pretty useful
+package = modutils
+#package = net-tools
+package = busybox
+# note that mount is included in busybox
+package = mount
+
+###### Extra services (at little cost)
+package = ettcl-telnetd
+package = ettcl-cmdd
+package = ettcl-httpd
+package = sample-html
+package = sample-cgi
+
+###### This stuff is not really needed (we use it in the bigger version)
+
+#package = bash
+#package = procps
+#package = tar
+#package = fileutils
+#package = textutils
+#package = sh-utils
+#package = util-linux
+#package = mingetty
+
+#package = NetKit-B
+#package = netfiles
+
+### If you want vi, choose only one of those
+#package = vim
+#package = elvis-tiny

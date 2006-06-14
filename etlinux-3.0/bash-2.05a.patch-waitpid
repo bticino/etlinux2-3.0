@@ -1,0 +1,46 @@
+--- ./nojobs.c.orig	2006-02-07 22:04:03.000000000 +0100
++++ ./nojobs.c	2006-02-07 22:57:16.000000000 +0100
+@@ -69,11 +69,7 @@
+ #  define siginterrupt(sig, code)
+ #endif /* !HAVE_SIGINTERRUPT */
+ 
+-#if defined (HAVE_WAITPID)
+-#  define WAITPID(pid, statusp, options) waitpid (pid, statusp, options)
+-#else
+-#  define WAITPID(pid, statusp, options) wait (statusp)
+-#endif /* !HAVE_WAITPID */
++#  define WAITPID(pid, statusp, options) wait4 (pid, statusp, options, NULL)
+ 
+ /* Return the fd from which we are actually getting input. */
+ #define input_tty() (shell_tty != -1) ? shell_tty : fileno (stderr)
+@@ -442,7 +438,7 @@
+   pid_t pid;
+   WAIT status;
+ 
+-  while ((pid = waitpid (-1, (int *)&status, WNOHANG)) > 0)
++  while ((pid = wait4 (-1, (int *)&status, WNOHANG, NULL)) > 0)
+     set_pid_status (pid, status);
+ #endif
+ }
+--- ./jobs.c.orig	2006-02-07 22:04:03.000000000 +0100
++++ ./jobs.c	2006-02-07 22:59:03.000000000 +0100
+@@ -95,18 +95,8 @@
+ #  define WAITPID(pid, statusp, options) \
+ 	wait3 ((union wait *)statusp, options, (struct rusage *)0)
+ #else
+-#  if defined (_POSIX_VERSION) || defined (HAVE_WAITPID)
+ #    define WAITPID(pid, statusp, options) \
+-	waitpid ((pid_t)pid, statusp, options)
+-#  else
+-#    if defined (HAVE_WAIT3)
+-#      define WAITPID(pid, statusp, options) \
+-	wait3 (statusp, options, (struct rusage *)0)
+-#    else
+-#      define WAITPID(pid, statusp, options) \
+-	wait3 (statusp, options, (int *)0)
+-#    endif /* HAVE_WAIT3 */
+-#  endif /* !_POSIX_VERSION && !HAVE_WAITPID*/
++	wait4 ((pid_t)pid, statusp, options, NULL)
+ #endif /* !(Ultrix && mips && _POSIX_VERSION) */
+ 
+ /* getpgrp () varies between systems.  Even systems that claim to be

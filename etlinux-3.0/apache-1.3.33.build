@@ -1,0 +1,58 @@
+#
+# Building apache-1.3.33
+#
+requires: libc
+requires: gdbm
+provides: httpd
+
+# compiling is easy: normal compile plus build a static executable
+build-begin
+	export RANLIB=${RANLIB:-ranlib}
+	export LD_SHLIB="${LD:-ld} $ETLINUX_LDFLAGS"
+	export LIBGDBM_DIR=$BUILDDIR/gdbm-1.7.3
+	export CC=${CC:-gcc}
+	export HOSTCC=gcc
+	./configure --target=apache --with-layout=Debian \
+	        --enable-suexec --suexec-caller=www-data \
+	        --suexec-docroot=/var/www --includedir=/$inc \
+	        --suexec-logfile=/var/log/apache/suexec.log \
+        	--without-confadjust --without-execstrip \
+	        --enable-shared=max --enable-rule=SHARED_CHAIN \
+        	--enable-module=most --enable-module=status \
+	        --enable-module=auth_digest --enable-module=log_referer \
+        	--enable-module=log_agent  \
+	        --activate-module=src/modules/extra/mod_macro.c || exit 1
+	make all || exit 1
+	${STRIP:-strip} src/apache
+	${STRIP:-strip} src/support/suexec
+build-end
+
+#install in /usr/ as per --prefix above
+install-begin
+	set +x
+	install -d $TARGET/usr/sbin 
+	install -d $TARGET/var/log/apache
+	install -c src/apache $TARGET/usr/sbin
+	install -d $TARGET/usr/lib/apache
+	install -c src/support/suexec $TARGET/usr/lib
+	modroot=$TARGET/usr/lib/apache/1.3
+	install -d $modroot
+	(cd src/modules && \
+	 for m in `find . -type f -name mod_\*.so` ; do  \
+	     install -c $m $modroot/ ; \
+         done)
+	if [ "$APACHE_DOCUMENT_ROOT" = "" ] ; then
+		echo "Warning: using default APACHE_DOCUMENT_ROOT" ;
+		APACHE_DOCUMENT_ROOT=/html;
+	fi
+	install -d $TARGET/$APACHE_DOCUMENT_ROOT
+	install -c htdocs/index.html.en \
+	$TARGET/$APACHE_DOCUMENT_ROOT/index.html
+	install -c htdocs/apache_pb.gif  $TARGET/$APACHE_DOCUMENT_ROOT/
+install-end
+
+htmldesc-begin
+htmldesc-end
+
+htmllist-begin ---------------------------------------------------
+htmllist-end -----------------------------------------------------

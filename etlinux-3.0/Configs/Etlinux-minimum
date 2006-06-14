@@ -1,0 +1,14 @@
+#
+# This is the minimum config for etlinux: ettcl alone
+#
+#
+
+# The following line states this is a distribution build-file, not a pkg one
+provides: etlinux
+
+###### Mandatory stuff (libc and ettcl are required by default)
+package = ettcl-init
+
+package = ettcl-telnetd
+package = ettcl-httpd
+package = ettcl-cmdd

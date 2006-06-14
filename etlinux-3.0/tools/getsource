@@ -1,0 +1,33 @@
+#!/bin/sh
+
+if [ $# -ne 1 ]; then
+    echo "$0: must receive a single argument" >& 2
+    exit 1
+fi
+CONFIG="$1.build"
+
+# Allow being invoked from elsewhere
+if [ "x$SOURCEDIR" != "x" ]; then
+    cd $SOURCEDIR
+fi
+
+
+if [ ! -r $1.build ]; then
+    echo "$0: can't open $CONFIG" >& 2
+    exit 1
+fi
+
+source=`awk '/^[ \t]*source: */ {print $2}' $CONFIG`
+if [ -z $source ]; then source="$1"; fi
+
+if [ -f $source.tar.gz ]; then echo $source; exit; fi
+
+# add version number if needed
+s=`ls -1 ${source}-[0-9]*.tar.gz ${source}[0-9]*.tar.gz 2> /dev/null | \
+	sort | tail -1 | sed 's/.tar.gz$//'`
+
+if [ -z "$s" ]; then
+    echo "$0: can't find $source, source for $1" >& 2
+    exit 1
+fi
+echo $s

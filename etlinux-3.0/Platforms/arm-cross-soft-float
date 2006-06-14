@@ -1,0 +1,22 @@
+# -*-Makefile-*-
+# Here we have the whole toolchain, so don't set CC alone
+CROSS_COMPILE = arm-linux-
+# Set CC, as we need -msoft-float and there may be a $CC in env
+CC = $(CROSS_COMPILE)gcc -msoft-float
+AS = $(CROSS_COMPILE)as
+LD = $(CROSS_COMPILE)ld
+# Definitions needed for ncurses
+CXX = $(CROSS_COMPILE)c++ -msoft-float
+RANLIB = $(CROSS_COMPILE)ranlib
+AR = $(CROSS_COMPILE)ar
+
+# Define ARCH and TARGETSYSTEM as required
+ARCH := arm
+TARGETSYSTEM := arm-generic-linux
+
+# use the glibc that comes with the compiler
+PLATFORMPKG := compiler-glibc
+
+# Where libraries are placed on the host, for calling $LD alone
+ETLINUX_LDFLAGS := -L$(shell dirname `$(CC) -print-file-name=libc.so`)
+

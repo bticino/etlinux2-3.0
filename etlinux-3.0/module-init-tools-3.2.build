@@ -1,0 +1,26 @@
+#
+# Building module-init-tools
+#
+provides: modutils
+
+# compiling is easy
+build-begin
+	CC=${CC:-gcc} ./configure --host=$TARGETSYSTEM
+	make || exit 1
+	${STRIP:-strip} depmod insmod lsmod modinfo modprobe rmmod || exit 1
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/sbin
+	install	-c depmod insmod lsmod modinfo modprobe rmmod $TARGET/sbin
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+htmllist-end -----------------------------------------------------

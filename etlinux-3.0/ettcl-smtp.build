@@ -1,0 +1,222 @@
+# 
+# Building smtpd for etlinux
+#
+requires: ettcl-init
+source: ettcl
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	mkdir -p $TARGET/etc/applications
+	mkdir -p $TARGET/var/spool/mail
+	cp Applications/smtpd/smtpd $TARGET/etc/applications/
+	install -c Applications/smtpd/smtpc $TARGET/bin
+install-end
+
+htmldesc-begin
+
+<h2>Smtpd</h2>
+
+<p>The version of <code>smtpd</code> included in this system is the
+one from <code>ettcl-14</code>.
+
+The documentation below comes from Ettcl documentation,
+available from:
+<ul>
+<li><a href="http://ar.linux.it/software/ettcl/">http://ar.linux.it/software/ettcl/#Smtpd</a>
+<li><a href="http://www.linux.it/~rubini/software/ettcl/">http://www.linux.it/~rubini/software/ettcl/#Smtpd</a>
+</ul>
+
+<p>The <var>smtpd</var> program included in <var>ettcl</var> is an
+implementation of the <var>Simple Mail Transfer Protocol</var>. The
+program is <small>RFC2821</small><a rel=footnote hfref="#fn-1"><sup>1</sup></a>
+compliant and implements a simple back-end to allow the implementation of 
+email-driven services. A simple smtp client called <var>smtpc</var> has
+been supplied too.
+
+
+<ul>
+<li><a href="#Smtpd%20Configuration">Smtpd Configuration</a>: 
+<li><a href="#Smtpd%20Features">Smtpd Features</a>: 
+</ul>
+
+<a name="Smtpd%20Configuration"> </a>
+<h3>Smtpd Configuration</h3>
+
+<p>The server is configured by setting items in the <var>options</var> array. 
+These items can be set in Tcl before the server is executed, and if they
+are not set the default is provided by <var>smtpd</var> itself.
+
+<p>These are the configuration variables, and their defaults:
+
+<dl>
+
+<br><dt><code>options(smtpd:cfg)</code>
+<dd>
+
+<p>If the variable is set, then its contents are used as a configuration
+file name. The file is executed using the <var>source</var> command. If
+it is not set, nothing happens.
+
+<br><dt><code>options(smtpd:name)</code>
+<dd>
+The name of this service, used for host access control. 
+If unset, it defaults to "<code>smtpd</code>".
+
+<br><dt><code>options(smtpd:port)</code>
+<dd>
+
+<p>The TCP port where the server runs. If unset, it defaults to 25.
+
+<br><dt><code>options(smtpd:maildir)</code>
+<dd>
+
+<p>The mailboxes default directory: the place where received data
+are stored and where configuration lives. 
+If unset, it defaults to <code>/var/spool/mail</code>.
+
+<br><dt><code>options(smtpd:logfile)</code>
+<dt><code>options(logfile)</code>
+<dd>
+
+<p>The name of the log file. The former variable defaults to
+the value of the latter, which defauls to <code>/var/log/ettcl.log</code>. 
+Log messages being written include the application name. 
+All write operations are atomic (done with
+a single <var>write</var> system call).
+
+<br><dt><code>options(smtpd:logfmt)</code>
+<dt><code>options(logfmt)</code>
+<dd>
+
+<p>The format for timestamp strings; the timestamp string is used
+as a leading string for every line written in the log file. 
+The default for the format string is <code>$options(logfmt)</code>,
+which in turn defaults to "<code>%Y-%m-%d %H:%M:%S %Z</code>". In
+an EtLinux system you might want to set <code>options(logfmt)</code>
+from within <code>/etc/init.d/options</code>, so all servers will use
+the same format.
+
+<br><dt><code>options(smtpd:hostsfile)</code>
+<dt><code>options(hostsfile)</code>
+<dd>
+
+<p>The name of the configuration file for host access control. 
+If unset, the former variable defaults to the value of
+the latter, which defauls to <code>/etc/hosts.allow</code>
+You can thus elect
+a system-wide default hostsfile, or one for this process only.
+
+<br><dt><code>options(smtpd:hostname)</code>
+<dt><code>options(hostname)</code>
+<dd>
+
+<p>The host name, not including the domain name. 
+If unset, the former variable defaults to the value of
+the latter, which defauls to <var>localhost</var>.
+
+<br><dt><code>options(smtpd:domainname)</code>
+<dt><code>options(domainname)</code>
+<dd>
+
+<p>The host domain name. 
+If unset, the former variable defaults to the value of
+the latter, which defaults to <var>localdomain</var>.
+
+<br><dt><code>options(smtpd:alias:<var>name</var>)</code>
+<dd>
+
+<p>Array items with a leading <code>smtpd:alias:</code> are used
+in alias expansion, allowing email for one user name to
+be delivered to another user name.
+
+<p>For instance, if you want specify root as a postmaster's alias
+you should set <code>options(smtpd:alias:postmaster)</code> to
+<code>root</code>. The value of an alias must be a single user name. 
+Delivery is then performed as specfied in 
+<a href="#Smtpd%20User%20Validation">
+Smtpd User Validation</a>.
+
+</dl>
+
+<a name="Smtpd%20Features"></a><h3>Smtpd Features</h3>
+
+<p>The server supports up to two configuration files (to set array elements
+in the <var>options</var> array or run arbitrary Tcl commands), host access
+control based on IP address, user validation control based on the
+contents of the directory <code>$options(smtpd:maildir)</code>, execution of
+scripts using the message body as an argument (again, configured by files 
+in <code>maildir</code>.
+
+<ul>
+<li><a href="#Smtpd%20Configuration%20Files">Smtpd Configuration Files</a>: 
+<li><a href="#Smtpd%20Host%20Access">Smtpd Host Access</a>: 
+<li><a href="#Smtpd%20User%20Validation">Smtpd User Validation</a>:
+</ul>
+
+<a name="Smtpd%20Configuration%20Files"> </a>
+<h4>Smtpd Configuration Files</h4>
+
+<p>Whe the server starts up, it reads the configuration file
+<code>/etc/smtpd.cfg</code>, if it exists. It then reads the file
+<var>$options(smtpd:cfg)</var> if the variable is set.
+
+
+<a name="Smtpd%20Host%20Access"></a><h4>Smtpd Host Access</h4>
+
+<p>The <var>smtpd</var> process reads <code>/etc/hosts.allow</code> 
+(or whatever hostsfile defined by <var>options(smtpd:hostsfile)</var> 
+by calling the procedure <var>getAllowedHosts</var> using 
+<var>smtpd</var> as a key (or whatever application name defined 
+by <var>options(smtpd:name)</var>). 
+The configuration file specifies which hosts are allowed to access the
+various Ettcl services.
+
+<p>For detailed syntax and example use, please refer to 
+<a href="#Httpd%20Host%20Access">Httpd Host Access</a>.
+
+<a name="Smtpd%20User%20Validation"></a><h4> Smtpd User Validation </h4>
+<p>When the <var>smtpd</var> process receives an email message, it uses
+the local part of the recipient name to choose whether to accept
+or refuse the message. The domain is simply ignored.
+
+<p>Validation is performed by looking at the contents of
+<code>$options(smtpd:maildir)</code> (<code>/var/spool/mail</code> by default),
+after alias substitution 
+(see <a href="#Smtpd%20Configuration">Smtpd Configuration</a>).
+
+<p>When a client tries to send email to a user <var>user</var>, <var>smtpd</var>
+subtitutes the alias (if any). Next, it looks for either
+<var>user</var><code>.mbox</code> or <var>user</var><code>.post</code> 
+within <code>maildir</code>. 
+If neither file exists, the receipient is refused unless it is
+<var>postmaster</var>. 
+Mail for postmaster is always accepted, and delivered to
+<code>/dev/null</code> if no action is configured for that user; RFC2821
+requires email to <var>postmaster</var> to always be accepted.
+
+<p>If the file <var>user</var><code>.mbox</code> exists, then the 
+message is appended to the <code>user</code> file in mailbox format. 
+If <var>user</var><code>.post</code> exists, the message header and body are 
+split, and the <var>user</var><code>.post</code>
+script is invoked.
+
+<p>As post-processing takes place, the message header is appended to the file
+<var>user</var>.<code>head</code>, the body is appended to 
+<var>user</var>, and the <code>.post</code> script is executed as a 
+different process.  
+The script will find itself within the <var>maildir</var> directory, and 
+will be able to access the global variables <code>RCPT</code> 
+(after alias substitution) and <code>FROM</code>.  
+
+
+htmldesc-end
+htmllist-begin
+
+<li><code>/etc/applications/smtpd</code> comes from
+	<code>ettcl-14/Applications/smtpd</code> .
+
+htmllist-end

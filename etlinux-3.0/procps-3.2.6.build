@@ -1,0 +1,32 @@
+#
+# Building procps
+#
+requires: ncurses
+
+# compiling is easy
+build-begin
+	make CC="$CC -I`pwd`/../ncurses-5.2/include -L`pwd`/../ncurses-5.2/lib"
+build-end
+
+# and installing is easy: just install most programs and the library
+install-begin
+	exe="kill free w top vmstat sysctl"
+	install -d $TARGET/bin
+	install -d $TARGET/lib
+	install -c ps/ps $exe $TARGET/bin
+	n=libproc-*.so
+	(cd proc && cp -a $n $(readlink $n) $TARGET/lib)
+	(cd proc && ${STRIP:-strip} $TARGET/lib/$(readlink $n))
+	for e in ps $exe ; do \
+		${STRIP:-strip} $TARGET/bin/$e ; \
+	done
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+htmllist-end -----------------------------------------------------

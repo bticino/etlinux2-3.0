@@ -1,0 +1,35 @@
+#
+# Building vim
+#
+requires: ncurses
+provides: vi
+
+# compiling is easy
+build-begin
+	cd src;
+	export CFLAGS="-I `pwd`/../../ncurses-5.2/include" \
+	LDFLAGS="-L `pwd`/../../ncurses-5.2/lib" 
+	./configure --host=$TARGETSYSTEM --disable-gui --without-x  \
+	--with-tlib=ncurses --with-features=tiny --disable-nls && make
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	install -c src/vim $TARGET/bin/vi
+	${STRIP:-strip} $TARGET/bin/vi
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/bin/vi</code> comes from __PACKAGE__.
+
+htmllist-end ----------------------------------------------------
+
+
+

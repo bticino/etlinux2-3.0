@@ -1,0 +1,34 @@
+--- ./tclUnixFile.c.orig	2006-02-07 22:04:03.000000000 +0100
++++ ./tclUnixFile.c	2006-02-07 22:10:16.000000000 +0100
+@@ -67,7 +67,7 @@
+ 
+     real_pid = (pid_t) pid;
+     while (1) {
+-	result = (int) waitpid(real_pid, statPtr, options);
++	result = (int) wait4(real_pid, statPtr, options, NULL);
+ 	if ((result != -1) || (errno != EINTR)) {
+ 	    return result;
+ 	}
+--- ./tclProsaSys.c.orig	2006-02-07 22:04:03.000000000 +0100
++++ ./tclProsaSys.c	2006-02-07 23:02:40.000000000 +0100
+@@ -379,9 +379,9 @@
+       case 'w':                                   /* sys_wait */
+         if (argc>2) goto wna;
+         if (argc==1) {
+-            localint = wait(&i);
++            localint = wait4(-1, &i, 0, NULL);
+         } else if (argc==2 && !strcmp(argv[1],"nohang")) {
+-	    localint = waitpid(-1, &i, WNOHANG);
++	    localint = wait4(-1, &i, WNOHANG, NULL);
+ 	    if (localint == 0) {
+ 		Tcl_AppendResult(interp, "sys_wait: ", strerror(EAGAIN),
+ 				 NULL);
+@@ -395,7 +395,7 @@
+                                  NULL);
+                 return TCL_ERROR;
+             }
+-            localint = waitpid(pid, &i, 0);
++            localint = wait4(pid, &i, 0, NULL);
+         }
+         if (localint<0) {
+             Tcl_AppendResult(interp, "sys_wait: ", strerror(errno),

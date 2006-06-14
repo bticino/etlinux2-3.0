@@ -1,0 +1,107 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    echo "$0: must receive a single argument" >& 2
+    exit 1
+fi
+
+# Allow being invoked from elsewhere
+if [ "x$SOURCEDIR" != "x" ]; then
+    cd $SOURCEDIR
+fi
+
+CONFIGFILE=$1
+
+if [ ! -r "$CONFIGFILE" ]; then
+    echo "$0: no such file: \"$CONFIGFILE\"" >& 2
+    exit 1
+fi
+
+error=0
+script=$0
+
+# This function adds a package to list, and possibly marks what it provides
+addpackage()
+{
+    list="$list $1"
+    addedpackage=1
+    p=`awk '/^[ \t]*provides: */ {print $2}' $1.build`
+    if [ -z "$p" ]; then return; fi
+    for mp in $p; do
+	name=`echo provide_$mp`
+	value=`eval echo \\${$name}`
+	if [ ! -z "$value" ]; then
+	    other=`eval echo \\${$name}`
+	    echo "$script: conflict: both $n and $value provide $mp" >& 2
+	    error=1
+	    return
+	fi
+	eval ${name}=$1
+    done
+}
+
+# This function finds a package (or an already provided item) possibly
+# adding the trailing version code, using the most recent available
+findbyshortname()
+{
+    pkg=$1
+    # accept provided names
+    if echo $pkg | grep '^[a-zA-Z0-9_]*$' > /dev/null; then
+	name=`echo provide_$pkg`
+	value=`eval echo \\${$name}`
+	if [ ! -z "$value" ]; then return; fi
+    fi
+    # accept a name already in the list
+    there=`echo $list | tr ' ' '\n' | \
+	egrep "^${pkg}\$|^${pkg}-[0-9]|^${pkg}[0-9]"`
+    if [ ! -z "$there" ]; then return; fi
+    # accept a literal match
+    if [ -f $pkg.build ]; then addpackage $pkg; return; fi
+    # look for the most-recent match for a name with a version attached
+    p2=`ls -1 ${pkg}-[0-9]*.build ${pkg}[0-9]*.build 2> /dev/null | \
+	sort | tail -1 | sed 's/.build$//'`
+    if [ ! -z "$p2" ]; then addpackage $p2; return; fi
+    # Otherwise, not found
+    if [ -z $2 ]; then
+	echo "$script: no such package: \"$pkg\"" >& 2
+    else
+	echo "$script: no such package: \"$pkg\" (required by $2)" >& 2
+    fi
+    error=1
+}
+
+# First, use platform-specific files (variable inherited by make)
+if [ '!' -z "$PLATFORMPKG" ]; then
+    for pkg in $PLATFORMPKG; do
+        findbyshortname $pkg
+    done
+fi
+
+# list the packages requested by the user
+firstlist=`awk '/^[ \t]*package *=/ {gsub("^.*package *= *",""); print}' \
+	    $CONFIGFILE`
+for pkg in $firstlist; do
+    findbyshortname $pkg
+done
+
+# always require libc and ettcl
+findbyshortname libc  base-system
+findbyshortname ettcl base-system
+
+# Now, we have a list of provided stuff as variables called provide_<sth>;
+# recursively look for requirements,
+
+addedpackage=1; while [ $addedpackage -ne 0 ]; do
+    addedpackage=0
+    for pkg in $list; do
+	r=`awk '/^[ \t]*requires: */ {print $2}' $pkg.build`
+	if [ -z "$r" ]; then continue; fi
+	for request in $r; do
+	    findbyshortname $request $pkg
+	done
+    done
+done
+
+if [ $error -ne 0 ]; then exit 1; fi
+echo $list
+exit 0

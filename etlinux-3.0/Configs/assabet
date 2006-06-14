@@ -1,0 +1,33 @@
+#
+# This is a selection of packages that work well on assabet with hh tools
+#
+
+package = arm-hhl-glibc
+package = ettcl
+
+package = ettcl-init
+package = ettcl-cmdd
+package = ettcl-httpd
+package = ettcl-telnetd
+package = sample-html
+package = sample-cgi
+package = cardmgr
+package = gdbserver
+package = modutils
+package = bash
+package = df
+package = gzip
+package = tar
+package = busybox
+
+## these two need work, they won't work as is, at least today (Sep 2002)
+#package = procps
+#package = elvis-tiny
+
+
+
+
+
+
+
+

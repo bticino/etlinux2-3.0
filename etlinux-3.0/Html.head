@@ -1,0 +1,44 @@
+<html>
+<head>
+<title>README for __BUILD__</title>
+</head>
+
+<!-- This information comes from the "head" html file in the Etlinux source
+	tree -->
+
+<body>
+
+<p>This file is a plain and simple README, built together with the
+file tree as part of the Etlinux build system (run by <code>make</code>).
+
+<h1>Etlinux-1.1</h1>
+
+<p>The latest sources to build Etlinux-1.1 can be downloaded from:
+<ul>
+<li><a href="ftp://etlinux.org/pub/etlinux/etlinux-1.1-devel">ftp://etlinux.org/pub/etlinux/etlinux-1.1-devel</a>
+<li><a href-"ftp://arcana.linux.it/pub/etlinux/etlinux-1.1-devel">ftp://arcana.linux.it/pub/etlinux/etlinux-1.1-devel</a>
+</ul>
+
+<h1>This system is based on ettcl-13</h1>
+
+<p>Since ettcl documentation is quote extensive, please find it
+in the source package, or look at it over on the web.
+
+<p><b>Sources:</b>
+<ul>
+<li><a href="ftp://etlinux.org/pub/etlinux/ettcl/ettcl-13.tar.gz">ftp://etlinux.org/pub/etlinux/ettcl/ettcl-13.tar.gz</a>
+<li><a href="ftp://ar.linux.it/pub/ettcl/ettcl-13.tar.gz">ftp://ar.linux.it/pub/ettcl/ettcl-13.tar.gz</a>
+<li><a href="http://ar.linux.it/pub/ettcl/ettcl-13.tar.gz">http://ar.linux.it/pub/ettcl/ettcl-13.tar.gz</a>
+</ul>
+
+<p><b>Online documentation:</b>
+<ul>
+<li><a href="http://ar.linux.it/software/ettcl/">http://ar.linux.it/software/ettcl/</a>
+<li><a href="http://www.linux.it/~rubini/software/ettcl/">http://www.linux.it/~rubini/software/ettcl/</a>
+</ul>
+
+
+<h1>System description provided by each package being compiled</h1>
+
+<!-- What comes next is extracted from the "build" files
+	 associated to pacakges -->

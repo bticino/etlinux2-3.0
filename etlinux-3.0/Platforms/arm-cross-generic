@@ -1,0 +1,19 @@
+# -*-Makefile-*-
+# Generic arm-linux compilation. Assume arm-linux is in $PATH
+CROSS_COMPILE = arm-linux-
+# Set CC, as there may be a $CC in env
+CC = $(CROSS_COMPILE)gcc
+AS = $(CROSS_COMPILE)as
+LD = $(CROSS_COMPILE)ld
+# Definitions needed for ncurses (thus bash)
+CXX = $(CROSS_COMPILE)c++
+RANLIB = $(CROSS_COMPILE)ranlib
+AR = $(CROSS_COMPILE)ar
+
+# Define ARCH and TARGETSYSTEM as required
+ARCH := arm
+TARGETSYSTEM := arm-generic-linux
+
+# use the glibc that comes with the compiler
+PLATFORMPKG := compiler-glibc
+

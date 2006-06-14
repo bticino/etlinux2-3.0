@@ -1,0 +1,12 @@
+#!/bin/sh
+
+awk '
+    /^\#/	{next}
+
+    /htmllist-begin/ {B=1; next}
+    /htmllist-end/   {B=0}
+
+    B {print}
+
+    {next}
+' $*

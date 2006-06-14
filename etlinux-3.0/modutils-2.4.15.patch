@@ -1,0 +1,137 @@
+--- ./depmod/depmod.c.orig	2006-02-08 15:10:51.000000000 +0100
++++ ./depmod/depmod.c	2006-02-08 15:11:19.000000000 +0100
+@@ -36,6 +36,7 @@
+ #include <unistd.h>
+ #include <syslog.h>
+ #include <limits.h>
++#include <sys/param.h>
+ #include <elf.h>
+ #include ELF_MACHINE_H
+ 
+--- ./genksyms/lex.l.orig	2006-02-08 15:03:55.000000000 +0100
++++ ./genksyms/lex.l	2006-02-08 15:05:06.000000000 +0100
+@@ -24,6 +24,7 @@
+ %{
+ 
+ #include <limits.h>
++#include <sys/param.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <ctype.h>
+--- ./genksyms/Makefile.in.orig	2006-02-08 15:10:10.000000000 +0100
++++ ./genksyms/Makefile.in	2006-02-08 15:10:34.000000000 +0100
+@@ -25,7 +25,7 @@
+ 	$(CC) $(CFLAGS) $(PARSERCFLAGS) $(DEFS) -c -o $@ $<
+ 
+ lex.c: lex.l parse.h
+-	flex -o$@ -d $^
++	flex -l -o$@ -d $^
+ 
+ crc32.tab: makecrc32.c
+ 	$(BUILDCC) $(BUILDCFLAGS) -o makecrc32 $^
+--- ./include/util.h.orig	2002-03-01 01:39:06.000000000 +0100
++++ ./include/util.h	2006-02-08 14:54:41.000000000 +0100
+@@ -39,7 +39,7 @@
+ extern int xftw(const char *directory, xftw_func_t);
+ 
+ /* Error logging */
+-extern int log;
++extern int logging;
+ extern int errors;
+ extern const char *error_file;
+ 
+--- ./insmod/insmod.c.orig	2002-03-01 01:39:06.000000000 +0100
++++ ./insmod/insmod.c	2006-02-08 14:54:41.000000000 +0100
+@@ -64,6 +64,7 @@
+ #include <string.h>
+ #include <alloca.h>
+ #include <limits.h>
++#include <sys/param.h>
+ #include <ctype.h>
+ #include <errno.h>
+ #include <stddef.h>
+--- ./insmod/modprobe.c.orig	2002-01-31 14:19:17.000000000 +0100
++++ ./insmod/modprobe.c	2006-02-08 14:54:41.000000000 +0100
+@@ -1022,7 +1022,7 @@
+ 		if (quiet)
+ 			my_argv[my_argc++] = "-q";
+ 
+-		if (log)
++		if (logging)
+ 			my_argv[my_argc++] = "-s";
+ 
+ 		if (insmod_opt) {
+--- ./util/modstat.c.orig	2001-01-05 02:45:19.000000000 +0100
++++ ./util/modstat.c	2006-02-08 14:54:41.000000000 +0100
+@@ -200,6 +200,7 @@
+ 				s->name += (unsigned long) syms;
+ 		}
+ 		next:
++		;
+ 	}
+ 
+ 	if (type & K_SYMBOLS) { /* Want info about symbols */
+--- ./util/meta_expand.c.orig	2001-01-05 02:45:19.000000000 +0100
++++ ./util/meta_expand.c	2006-02-08 14:54:41.000000000 +0100
+@@ -35,6 +35,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <limits.h>
++#include <sys/param.h> /* PATH_MAX not in limits.h with some cross-toolchains */
+ #include <string.h>
+ #include <ctype.h>
+ #if HAVE_WORDEXP
+--- ./util/config.c.orig	2002-03-14 23:03:15.000000000 +0100
++++ ./util/config.c	2006-02-08 14:54:41.000000000 +0100
+@@ -1478,6 +1478,7 @@
+ 			}
+ 		}
+ 	    next:
++		;
+ 	}
+ 
+ 	if (npaths > 0)
+--- ./util/logger.c.orig	2002-03-24 06:01:03.000000000 +0100
++++ ./util/logger.c	2006-02-08 14:54:41.000000000 +0100
+@@ -21,6 +21,7 @@
+   */
+ 
+ #include <limits.h>
++#include <sys/param.h> /* PATH_MAX not in limits.h with some cross-toolchains */
+ #include <stdio.h>
+ #include <stdarg.h>
+ #include <stdlib.h>
+@@ -31,7 +32,7 @@
+ 
+ /*======================================================================*/
+ 
+-int log;
++int logging;
+ static int silent;
+ 
+ int errors;
+@@ -75,7 +76,7 @@
+ 
+ 	if (silent)
+ 		;
+-	else if (log) {
++	else if (logging) {
+ 		char buf[2*PATH_MAX];
+ 		int n;
+ 
+@@ -108,7 +109,7 @@
+ 	va_list args;
+ 
+ 	if (silent);
+-	else if (log) {
++	else if (logging) {
+ 		char buf[2*PATH_MAX];
+ 		va_start(args, fmt);
+ 		vsnprintf(buf, sizeof(buf), fmt, args);
+@@ -132,5 +133,5 @@
+ #ifdef STOREMSG
+ 	atexit(dumpmsg);
+ #endif
+-	log = 1;
++	logging = 1;
+ }

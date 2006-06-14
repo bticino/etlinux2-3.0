@@ -1,0 +1,11 @@
+--- ./include/MKkey_defs.sh.orig	Thu Apr 20 10:21:49 2006
++++ ./include/MKkey_defs.sh	Thu Apr 20 10:23:42 2006
+@@ -43,7 +43,7 @@
+ pass3=pass3_$$
+ pass4=pass4_$$
+ trap 'rm -f $data pass[1234]_$$' 0 1 2 5 15
+-sed -e 's/[	]\+/	/g' < $DATA |sort -n +5 >$data
++sed -e 's/[	]\+/	/g' < $DATA |sort -k 6 -n >$data
+ 
+ cat <<EOF
+ /*

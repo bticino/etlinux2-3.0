@@ -1,0 +1,351 @@
+# 
+# Building httpd for etlinux
+#
+requires: ettcl-init
+provides: httpd
+source: ettcl
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	mkdir -p $TARGET/etc/applications
+	cp  Applications/httpd/httpd $TARGET/etc/applications
+install-end
+
+htmldesc-begin
+
+<h2>Httpd</h2>
+
+<p>The version of <code>httpd</code> included in this system is the
+one from <code>ettcl-14</code>.
+
+The documentation below comes from Ettcl documentation,
+available from:
+<ul>
+<li><a href="http://ar.linux.it/software/ettcl/">http://ar.linux.it/software/ettcl/#Httpd</a>
+<li><a href="http://www.linux.it/~rubini/software/ettcl/">http://www.linux.it/~rubini/software/ettcl/#Httpd</a>
+</ul>
+
+<p>The <var>httpd</var> program included in <var>ettcl</var> is compliant with
+version 1.0 of the HTTP protocol; even though version 1.1 of the
+protocol is widely used, version 1.1 requires compatibility with
+version 1.0, so this <var>httpd</var> works with all recent browsers
+(but it might not work with very old browsers, as it doesn't accept
+queries that are not HTTP-1.0 compliant).
+
+<ul>
+<li><a href="#Httpd%20Configuration">Httpd Configuration</a>: 
+<li><a href="#Httpd%20Features">Httpd Features</a>: 
+</ul>
+
+<a name="Httpd%20Configuration"> </a>
+<h3>Httpd Configuration</h3>
+
+<p>The server is configured by setting items in the <var>options</var> array. 
+These items can be set in Tcl before the server is executed, and if they
+are not set the default is provided by <var>httpd</var> itself.
+
+<p>These are the configuration variables, and their defaults:
+
+<dl>
+
+<br><dt><code>options(httpd:cfg)</code>
+<dd>
+
+<p>If the variable is set, then its contents are used as a configuration
+file name. The file is executed using the <var>source</var> command. If
+it is not set, nothing happens.
+
+<br><dt><code>options(httpd:port)</code>
+<dd>
+
+<p>The TCP port where the server runs. If unset, it defaults to 80.
+
+<br><dt><code>options(httpd:name)</code>
+<dd>
+The name of this service, used for host access control. 
+If unset, it defaults to "<code>httpd</code>".
+
+<br><dt><code>options(httpd:hostsfile)</code>
+<dt><code>options(hostsfile)</code>
+<dd>
+
+<p>The name of the configuration file for host access control. 
+If unset, the former variable default to the value of
+the latter, which in
+turn defaults to <code>/etc/hosts.allow</code>". You can thus elect
+a system-wide default hostsfile, or one for this process alone.
+
+<br><dt><code>options(httpd:docroot)</code>
+<dd>
+
+<p>The document root, where HTML pages are looked for. If unset,
+it defaults to <code>/html</code>.
+
+<br><dt><code>options(httpd:log)</code>
+<dd>
+
+<p>The name of the log file. The variable defaults to
+<code>/var/log/ettcl.log</code>. The log messages being written includes
+the application name, so different servers can share the same log
+file. All write operations are atomic (done with
+a single  <var>write</var> system call).
+
+<br><dt><code>options(httpd:logfmt)</code>
+<dt><code>options(logfmt)</code>
+<dd>
+
+<p>The format for timestamp strings; the timestamp string is used
+as a leading string for every line written in the log file. 
+The default for the format string is <code>$options(logfmt)</code>,
+which in turn defaults to "<code>%Y-%m-%d %H:%M:%S %Z</code>". In
+an EtLinux system you might want to set <code>options(logfmt)</code>
+from within <code>/etc/init.d/options</code>, so all servers will use
+the same format.
+
+<br><dt><code>options(http:type:.html)</code>
+<dd>
+
+<p>This variable is set to "<code>text/html</code>". Whenever a file
+is served by the web server, it's extension is used to address
+an item <code>http:type:</code><var>extension</var> in the <code>options</code>
+array. You might set the types from a standard
+<code>mime.types</code>:
+<pre>if ![catch {set F [open /etc/mime.types]}] {
+    while {[gets $F str]&gt;=0} {
+        if [regexp "^ *#" $str] continue
+        if [catch {set type [lindex $str 0]}] continue
+        for {set n 1} \$n&lt;[llength $str] {incr n} {
+            set options(httpd:type:.[lindex $str $n]) $type
+        }
+    }
+    close $F
+}
+</pre>
+
+<br><dt><code>options(httpd:403)</code>
+<dt><code>options(httpd:404)</code>
+<dt><code>options(httpd:501)</code>
+<dd>
+
+<p>The server can report HTTP errors of type 403 (forbidden), 404
+(not found), and 501 (not implemented). When the error is
+reported, if the associated variable is set, its value is
+opened as a file name that is returned to the client, after
+the standard error message. This allows customization of
+error reporting.
+
+</dl>
+
+<a name="Httpd%20Features"> </a>
+<h3>Httpd Features</h3>
+
+<p>The server supports up to two configuration files (to set array elements
+in the <var>options</var> array or run arbitrary Tcl commands), host access
+control based on IP address, <code>GET</code> and <code>POST</code> methods (using
+the <code>CGI</code> standard to talk with external applications), error
+reporting with user-provided error notification files, Mime types
+associated to file names.
+
+<ul>
+<li><a href="#Httpd%20Configuration%20Files">Httpd Configuration Files</a>: 
+<li><a href="#Httpd%20Host%20Access">Httpd Host Access</a>: 
+<li><a href="#GET%20and%20POST%20Methods">GET and POST Methods</a>: 
+<li><a href="#CGI%20Interface">CGI Interface</a>: 
+<li><a href="#Httpd%20Error%20Reporting">Httpd Error Reporting</a>: 
+<li><a href="#Httpd%20Logs">Httpd Logs</a>: 
+</ul>
+
+<a name="Httpd%20Configuration%20Files"> </a>
+<h4>Httpd Configuration Files</h4>
+
+<p>Whe the server starts up, it reads the configuration file
+<code>/etc/httpd.cfg</code>, if it exists. It then reads the file
+<var>$options(httpd:cfg)</var> if the variable is set.
+
+<p>If you want to run several web servers on several TCP ports, you can
+avoid using <code>/etc/httpd.cfg</code> and use a per-process configuration
+file by setting the <var>httpd:cfg</var> item in <var>options</var> to a different
+value for each process.
+
+<p>Each configuration file, then, can set a different value for the TCP
+port number and for the service name (to differentiate host access
+control while using the default hostsfile), or change the name of the
+hostsfile, as well as other server features.
+
+<a name="Httpd%20Host%20Access"> </a>
+<h4>Httpd Host Access</h4>
+
+<p>The <var>httpd</var> process reads <code>/etc/hosts.allow</code> (or whatever
+hostsfile defined by <var>options(httpd:hostsfile)</var> by calling the
+procedure <var>getAllowedHosts</var> using <var>httpd</var> as a key (or whatever
+application name defined by <var>options(httpd:name)</var>). The
+configuration file specifies which hosts are allowed to access the
+various Ettcl services.
+
+<p>Empty lines and lines that begin with a hash mark are ignored, other
+lines are formatted like "<var>service</var>: <var>host</var>", where <var>host</var>
+is a glob expression for an IP address.  If a given <var>service</var>
+doesn't appear in the file, then all hosts are allowed. If the service
+appears in the file at least once, then only IP addresses that match the
+glob expression are allowed.  For example, the following lines
+allow access from <var>localhost</var>, a C class and a single host. 
+Note that you can also place several glob expressions on the same lines,
+separated by space characters.
+
+<pre>	httpd: 127.*
+        httpd: 192.168.1.*
+        httpd: 151.38.134.203
+</pre>
+
+<p>To allow no hosts at all, use "<code>httpd: none</code>" or any other
+expression that doesn't match any IP address. To allow any host,
+use <code>httpd: *</code>, or no <code>httpd</code> line at all.
+
+<p>If you want to use the same access rules for all Ettcl services, you can
+define <var>options(httpd:name)</var> and all other service names to the same
+value (e.g., "<code>any</code>"), in order to use the same set of host glob
+expression for all services.
+
+<a name="GET%20and%20POST%20Methods"> </a>,
+<h4>GET and POST Methods</h4>
+
+<p>The server accepts <code>GET</code> and <code>POST</code> methods. Any query
+including either of "<code>..</code>", "<code>&amp;</code>", "<code>?</code>",
+"<code>*</code>", "<code>(</code>", "<code>)</code>", "<code>$</code>",
+"<code>;</code>", "<code>#</code>", "<code>|</code>" is refused with an error
+of <var>403 Forbidden</var>. See <a href="#Httpd%20Error%20Reporting">Httpd Error Reporting</a>.
+
+<p>Any query that starts with <code>cgi-bin</code>, with or without a leading
+slash is considered a CGI request. See <a href="#CGI%20Interface">CGI Interface</a>.
+
+<p>If the file being requested doesn't exist, and error of <var>404 Not found</var>
+is reported. See <a href="#Httpd%20Error%20Reporting">Httpd Error Reporting</a>.
+
+<p>Note that this version of the server doesn't handle hex-encoded
+characters in file names (for example, "<code>%7E</code>" isn't converted to
+"<code>~</code>"). It allows them in CGI parameters, though.
+
+<a name="CGI%20Interface"> </a>
+<h4>CGI Interface</h4>
+
+<p>If the filename requested by either a <code>GET</code> or a <code>POST</code> query
+begins with <code>cgi-bin</code>, either with or without a leading slash,
+everything in the file name up-to and excluding the first question mark
+is considered an application name (the application is searched in the
+filesystem in the <code>cgi-bin</code> directory under the document root
+selected for the process).
+
+<p>If the application is written in <var>ettclsh</var>, then the internal
+<var>sys_fork</var> and <var>sys_dup</var> commands are used to attach to the
+application. Otherwise, the application is executed using the <var>exec</var>
+Tcl command.
+
+<p>When the application is executed by the <code>GET</code> method, it will find
+<code>QUERY_STRING</code> set in the environment. Moreover, if the CGI
+application is not a Tcl script, all arguments are set as environment
+variables, and the current date in http format is recorded as
+<code>DATE</code> in the environment. The example <var>sh</var> CGI applications
+use this information.
+
+<p>When the application is called via <code>POST</code>, it will find
+<code>CONTENT_LENGTH</code> set in the environment and will be able to read
+data from <var>stdin</var>. Note that you may need to remove trailing
+newlines from query data.
+
+<p>The stdout of the application is directly connected to the network
+socket, with no intervention from the <var>httpd</var> server.
+
+<p>Several CGI examples are provided in the source package, with a
+<code>cgidemo.html</code> html page that links to all of them.
+
+<p>Note that you can use the <var>etget</var> application (part of the
+<var>httpd</var> source dir) to time GET and POST requests. These
+are some timings I get with a 386 running Linux-2.2.18 and libc5
+in 4MB of memory:
+
+<pre>morgana% etget pico 80 '/cgi-bin/glob?FILE=%2Fvar%2Frun&amp;GLOB='
+HTTP/1.0 200 OK
+0.502689
+morgana% etget pico 80 '/cgi-bin/ls?FILE=%2Fvar%2Frun&amp;GLOB='
+HTTP/1.0 200 OK
+0.362456
+</pre>
+
+<p>This is the same example run with 1MB less RAM:
+
+<pre>morgana% etget pico 80 '/cgi-bin/ls?FILE=%2Fvar%2Frun&amp;GLOB='
+HTTP/1.0 200 OK
+1.203962
+morgana% etget pico 80 '/cgi-bin/glob?FILE=%2Fvar%2Frun&amp;GLOB='
+HTTP/1.0 200 OK
+3.515961
+</pre>
+
+<p>To run POST queries in <var>etget</var>, specify the POST data as fourth
+argument.
+
+<a name="Httpd%20Error%20Reporting"> </a>
+<h4>Httpd Error Reporting</h4>
+
+<p>The <var>httpd</var> application reports errors according to HTTP/1.0. 
+According to the setting of configuration variables, an html file can be
+returned to the network connection, so you can choose to return a custom
+error page instead of the plain error message. The custom error page
+can even include a form (for example, to make the user report the error).
+
+<p>The daemon reports three errors:
+
+<ul>
+
+<li>403 Forbidden
+Returned if the query includes <code>..</code> or one of the forbidden
+characters.  The html file, if any, is <var>$options(httpd:403)</var>. 
+See <a href="#GET%20and%20POST%20Methods">GET and POST Methods</a>.  The same error is generated whenever a
+client is rejected by host access policy.
+
+<li>404 Not found
+Returned whenever the requested file or CGI application is not
+available. The html file, if any, is <var>$options(httpd:404)</var>.
+
+<li>501 Not Implemented
+Returned when a method other than <code>GET</code> or <code>POST</code> is received,
+For example, <code>HEAD</code> is not yet implemented. 
+The html file, if any, is <var>$options(httpd:404)</var>.
+
+</ul>
+
+<a name="Httpd%20Logs"> </a>
+<h4>Httpd Logs</h4>
+
+<p>The applications writes log information to the log file, opened
+in append mode. Each even being logged is written by issuing a single
+<var>write</var> system call, to prevent problems when several processes write
+to the same log file.
+
+<p>The following events are logged, each of them is timestamped
+according to <var>options(httpd:logfmt)</var>:
+
+<ul>
+
+<li>All errors
+Whenever an HTTP error is generated, the server writes one record to the
+log file, including the error number, error string and detail. This
+includes all refused connections because of host access policies.
+
+<li>All queries
+As soon as a query is received, the server writes one log record
+including the IP address of the client and the whole query string.
+
+</ul>
+
+htmldesc-end
+htmllist-begin
+
+<li><code>/etc/applications/httpd</code> comes from
+	<code>ettcl-14/Applications/httpd</code> .
+
+htmllist-end

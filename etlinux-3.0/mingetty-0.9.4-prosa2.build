@@ -1,0 +1,26 @@
+#
+# Building mingetty
+#
+
+# compiling is easy
+build-begin
+	make CC="${CC:-gcc}"; # avoid patching makefile
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/sbin $TARGET/etc/init.d/respawn
+	install	-c mingetty $TARGET/sbin
+	install	-c init.d/* $TARGET/etc/init.d/respawn
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/sbin/mingetty</code> and its startup scripts come from __PACKAGE__.
+
+htmllist-end -----------------------------------------------------

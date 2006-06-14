@@ -1,0 +1,19 @@
+
+# use the deb packages from http://zigzag.lvk.cs.msu.su/~nikita/debian/sarge/
+
+# Here we have the whole toolchain, so don't set CC alone
+CROSS_COMPILE = powerpc-linux-
+# Still, set CC, as the user may have a default in the environment
+CC = $(CROSS_COMPILE)gcc
+
+# Define ARCH and TARGETSYSTEM as required
+ARCH := ppc
+TARGETSYSTEM := powerpc-generic-linux
+
+# force glibc to be copied from hhl stuff
+PLATFORMPKG := compiler-glibc
+
+# Definitions needed for ncurses
+CXX = $(CROSS_COMPILE)c++
+RANLIB = $(CROSS_COMPILE)ranlib
+AR = $(CROSS_COMPILE)ar

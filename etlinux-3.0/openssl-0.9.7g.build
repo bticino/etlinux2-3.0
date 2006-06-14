@@ -1,0 +1,36 @@
+#
+# Building openssl-0.9.7g
+#
+
+build-begin
+	[ "$CROSS_COMPILE" = "" ] && target=linux-elf || target=$TARGETSYSTEM
+	eval `which perl` ./Configure --openssldir=`pwd`/tmp $target shared
+	make CC="${CC}" RANLIB=${RANLIB:-ranlib} AR="${AR:-ar} r" 
+	#make install
+build-end
+
+install-begin
+	install -d $TARGET/bin
+	#install -d $TARGET/usr/local/ssl/certs
+	install -d $TARGET/lib
+	#install -d $TARGET/usr/local/ssl/misc
+	#install -d $TARGET/usr/local/ssl/private
+	for n in libcrypto.so libssl.so ; do 
+		cp -a $n `readlink $n` $TARGET/lib
+		${STRIP:-strip} $TARGET/lib/$(readlink $n)
+	done
+	install -c apps/openssl $TARGET/bin
+	${STRIP:-strip} $TARGET/bin/openssl
+	# install -c apps/CA.sh apps/c_hash apps/c_info apps/c_issuer \
+	# apps/c_name $TARGET/usr/local/ssl/misc
+install-end
+
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>openssl</code> comes from __PACKAGE__.
+
+htmllist-end -----------------------------------------------------

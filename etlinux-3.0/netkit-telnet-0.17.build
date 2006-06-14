@@ -1,0 +1,37 @@
+#
+# Building netkit-telnet
+#
+requires: ncurses
+provides: telnet telnetd
+
+# compiling is easy
+build-begin
+	export CFLAGS="-I`pwd`/../ncurses-5.2/include \
+	-L`pwd`/../ncurses-5.2/lib -D_GNU_SOURCE"
+	export CXXFLAGS=$CFLAGS
+	./configure && make LDFLAGS=-L`pwd`/../ncurses-5.2/lib
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin 
+	install -d $TARGET/sbin
+	install -c telnet/telnet $TARGET/bin
+	install -c telnetd/telnetd $TARGET/sbin
+	${STRIP:-strip} $TARGET/bin/telnet
+	${STRIP:-strip} $TARGET/sbin/telnetd
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li>the following programs (in <code>/bin</code> and <code>/sbin</code>)
+	come from __PACKAGE__: <code>telnet telnetd</code>
+
+htmllist-end -----------------------------------------------------
+

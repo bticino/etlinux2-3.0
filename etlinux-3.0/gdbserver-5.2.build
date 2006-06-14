@@ -1,0 +1,28 @@
+#
+# gdbserver, from gdb-5.2 source code
+#
+source: gdb-5.2
+# this doesn't work with libc5
+requires: libc6
+
+build-begin
+	echo "../../configure --target=$TARGETSYSTEM --norecursion"
+	cd gdb/gdbserver && ../../configure --target=$TARGETSYSTEM \
+		--norecursion
+	make
+build-end
+
+install-begin
+	install -d $TARGET/usr/bin
+	cp gdb/gdbserver/gdbserver $TARGET/usr/bin
+	${STRIP:-strip} $TARGET/usr/bin/gdbserver
+install-end
+
+
+htmldesc-begin
+htmldesc-end
+htmllist-begin
+
+<li><code>/usr/bin/gdbserver</code> comes from gdb-5.2.
+
+htmllist-end

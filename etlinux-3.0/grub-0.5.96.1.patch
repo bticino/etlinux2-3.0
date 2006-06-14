@@ -1,0 +1,140 @@
+--- ./netboot/main.c.orig	Sat Jul 29 21:22:54 2000
++++ ./netboot/main.c	Mon Feb  3 23:50:59 2003
+@@ -150,6 +150,28 @@
+ 
+ static const char broadcast[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+ 
++/* for configfile hack */
++int sprintf_my_ip(char *target)
++{
++  unsigned long addr;
++
++  if (! eth_probe ()) {
++    grub_printf ("No ethernet card found.\n");
++    return 1;
++  }
++  if (! network_ready) {
++    grub_printf ("Not initialized yet.\n");
++    return 1;
++  }
++
++  addr = arptable[ARP_CLIENT].ipaddr.s_addr;
++  grub_sprintf (target, "%d.%d.%d.%d",
++		addr & 0xFF, (addr >> 8) & 0xFF,
++		(addr >> 16) & 0xFF, addr >> 24);
++  return 0;
++}
++
++
+ void
+ print_network_configuration (void)
+ {
+--- ./stage2/boot.c.orig	Mon Oct 16 16:42:08 2000
++++ ./stage2/boot.c	Tue Feb  4 08:37:26 2003
+@@ -308,14 +308,8 @@
+ 			 0,
+ 			 (64 - setup_sects - 1) << 9);
+ 
+-	  /* Copy command-line plus memory hack to staging area.
+-	     NOTE: Linux has a bug that it doesn't handle multiple spaces
+-	     between two options and a space after a "mem=" option isn't
+-	     removed correctly so the arguments to init could be like
+-	     {"init", "", "", NULL}. This affects some not-very-clever
+-	     shells. Thus, the code below does a trick to avoid the bug.
+-	     That is, copy "mem=XXX" to the end of the command-line, and
+-	     avoid to copy spaces unnecessarily. Hell.  */
++	  /* Copy command-line */
++	  /* Removed the mem= crap, linux knows about memory -- ARub */
+ 	  {
+ 	    char *src = skip_to (0, arg);
+ 	    char *dest = (char *) CL_MY_LOCATION;
+@@ -323,21 +317,6 @@
+ 	    while (((int) dest) < CL_MY_END_ADDR && *src)
+ 	      *(dest++) = *(src++);
+ 	    
+-	    /* Add a mem option automatically only if the user doesn't
+-	       specify it explicitly.  */
+-	    if (! grub_strstr (arg, "mem=")
+-		&& ! (load_flags & KERNEL_LOAD_NO_MEM_OPTION))
+-	      {
+-		if (dest != (char *) CL_MY_LOCATION)
+-		  *(dest++) = ' ';
+-		
+-		grub_memmove (dest, "mem=", 4);
+-		dest += 4;
+-		
+-		dest = convert_to_ascii (dest, 'u', (extended_memory + 0x400));
+-		*(dest++) = 'K';
+-	      }
+-
+ 	    *dest = 0;
+ 	  }
+ 
+--- ./stage2/builtins.c.orig	Thu Oct 19 21:50:00 2000
++++ ./stage2/builtins.c	Mon Feb  3 23:50:59 2003
+@@ -644,7 +644,25 @@
+ static int
+ configfile_func (char *arg, int flags)
+ {
+-  char *new_config = config_file;
++  extern int sprintf_my_ip(char *target);
++  static char arg_hacked[128]; /* same as config_file */
++  char *new_config = arg_hacked;
++  while ((*new_config++ = *arg++) != 0)
++      /* strcpy */;
++
++  /* if the last char is #, convert it to our IP address */
++  new_config -= 2;
++  if (*new_config == '#') {
++#ifdef SUPPORT_NETBOOT
++      if (sprintf_my_ip(new_config))
++	  return 1;
++#else
++      grub_printf("invalid filename: no network support\n");
++      return 1;
++#endif
++  }
++  arg = arg_hacked;
++  new_config = config_file;
+ 
+   /* Check if the file ARG is present.  */
+   if (! grub_open (arg))
+@@ -3640,9 +3658,9 @@
+ terminal_func (char *arg, int flags)
+ {
+   int default_terminal = 0;
+-  int to = -1;
++  int to = 5; /* use a sane default for the timeout */
+   int dumb = 0;
+-  int saved_terminal = terminal;
++  int tmp, saved_terminal = terminal;
+ 
+   /* Get GNU-style long options.  */
+   while (1)
+@@ -3700,6 +3718,26 @@
+ 
+       arg = skip_to (0, arg);
+     }
++
++  /* If serial has been activated, at least tell it to the unaware watcher */
++  if ((terminal & TERMINAL_SERIAL) && !(saved_terminal & TERMINAL_SERIAL))
++    {
++      int both = (terminal & TERMINAL_CONSOLE);
++      tmp = terminal; terminal = saved_terminal;
++      grub_printf("Activating %s (timeout is %d seconds)\n",
++	both ? "both serial port and console" : "serial port", to);
++      terminal = tmp;
++    }
++  /* similarly, if the serial port goes idle */
++  if ((terminal & TERMINAL_CONSOLE) && !(saved_terminal & TERMINAL_CONSOLE)) 
++    {
++      int both = (terminal & TERMINAL_SERIAL);
++      tmp = terminal; terminal = saved_terminal;
++      grub_printf("Activating %s (timeout is %d seconds)\n",
++        both ? "both serial port and console" : "console", to);
++      terminal = tmp;
++    } 
++
+ 
+   /* If a seial console is turned on, wait until the user pushes any key.  */
+   if (terminal & TERMINAL_SERIAL)

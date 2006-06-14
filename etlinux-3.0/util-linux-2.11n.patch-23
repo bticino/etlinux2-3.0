@@ -1,0 +1,12 @@
+diff -Naur util-linux-2.11n.orig/disk-utils/Makefile util-linux-2.11n/disk-utils/Makefile
+--- util-linux-2.11n.orig/disk-utils/Makefile	Wed Jan 24 00:50:18 2001
++++ util-linux-2.11n/disk-utils/Makefile	Fri May 20 14:54:50 2005
+@@ -14,7 +14,7 @@
+ # Where to put binaries?
+ # See the "install" rule for the links. . .
+ 
+-SBIN= 	mkfs mkswap blockdev elvtune fsck.minix mkfs.minix mkfs.bfs
++SBIN= 	mkfs mkswap fsck.minix mkfs.minix mkfs.bfs
+ 
+ USRBIN=	fdformat isosize
+ 

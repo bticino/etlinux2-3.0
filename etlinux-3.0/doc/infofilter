@@ -1,0 +1,18 @@
+#! /usr/bin/sed -f
+
+
+# allow "%" as a comment char, but only at the beginning of the line
+s/^%/@c /
+#s/[^\\]%.*$//
+s/^\\%/%/
+
+#preserve blanks in @lisp blocks
+/@lisp/,/@end lisp/ p
+/@lisp/,/@end lisp/ d
+/@example/,/@end example/ p
+/@example/,/@end example/ d
+
+# remove leading blanks
+s/^[ 	]*//
+
+#s/\\t/@code/g

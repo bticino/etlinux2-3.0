@@ -1,0 +1,19 @@
+#
+# Building modssl (modssl)
+#
+
+# We do nothing. Apache will use this !!!
+build-begin
+build-end
+
+# and installing is trivial (install in /usr/ as per --prefix above)
+install-begin
+install-end
+
+htmldesc-begin
+htmldesc-end
+
+htmllist-begin ---------------------------------------------------
+htmllist-end -----------------------------------------------------
+
+

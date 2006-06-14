@@ -1,0 +1,52 @@
+#!/bin/bash
+
+declare -i error=0
+script=$(basename $0)
+
+# Allow being invoked from elsewhere
+if [ "x$SOURCEDIR" != "x" ]; then
+    cd $SOURCEDIR
+fi
+
+if [ -z "$CONFIG" ]; then
+    echo "$script: Error: CONFIG must be defined" >& 2
+    error=1+$error
+fi
+if [ -z "$PACKAGES" ]; then
+    echo "$script: Error: PACKAGES must be defined or taken from cfg file" >& 2
+    echo "$script: Error:   (check for 'no such package' error above)" >& 2
+    error=1+$error
+fi
+
+if [ $error -ne 0 ]; then exit 1; fi
+
+error=0
+
+for pkg in $PACKAGES; do
+    if [ ! -r $pkg.build ]; then
+	echo "$script: $pkg.build not found" >& 2
+	error=1+$error
+    fi
+done
+
+# Use the require directive to create prerequisites. Note that a package
+# may require a virtual package, so there may be no match in the package
+# name. Fortunately, virtual packages are not compilation-time prerequisites
+# but only runtime ones
+for pkg in $PACKAGES; do
+    r=`awk '/^[ \t]*requires: */ {print $2}' $pkg.build`
+    if [ -z "$r" ]; then continue; fi
+    for request in $r; do
+	there=`echo $PACKAGES | tr ' ' '\n' | \
+	    egrep "^${request}\$|^${request}-[0-9]|^${request}[0-9]"`
+	if [ ! -z "$there" ]; then
+	    echo -e "tmp/$pkg.built: tmp/$there.built\n";
+	fi
+    done
+done
+
+
+
+# Do we need to use "source" here?
+
+exit 0

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    exit 0; # no customization being used
+fi
+
+# Allow being invoked from elsewhere
+if [ "x$SOURCEDIR" = "x" ]; then
+    SOURCEDIR=$(/bin/pwd)
+fi
+
+error=0
+whoerr=""
+
+DIR=`/bin/pwd`
+
+echo ==== Running customizations
+for n; do
+    echo "    ---- $n"
+    export CUSTOMIZATION=$SOURCEDIR/Customizations/$n
+    if [ ! -d $CUSTOMIZATION ]; then
+	cd $CUSTOMIZATION || true; #spit an error
+	error=1
+	continue
+    fi
+    if [ -d $CUSTOMIZATION/ADD ]; then
+	echo "        ---- copying files..."
+	(cd $CUSTOMIZATION/ADD && 
+	    find . -depth -print | egrep -v '/CVS$|/CVS/' | \
+		cpio -pdamu $TARGETDIR)
+    fi
+    if [ -f $CUSTOMIZATION/DEL ]; then
+	echo "        ---- deleting files..."
+	for f in `cat $CUSTOMIZATION/DEL`; do
+	    echo $f | grep '/\.\./' > /dev/null || rm -rf $TARGETDIR/$f
+	done
+    fi
+    if [ -x $CUSTOMIZATION/RUN ]; then
+	echo "        ---- running custom commands..."
+	cd $TARGETDIR
+	if ! $CUSTOMIZATION/RUN; then error=1; whoerr="$whoerr $n"; fi
+    fi
+done
+if [ $error -gt 0 ]; then echo "*** Errors in customizations:$whoerr" 1>&2; fi
+exit $error

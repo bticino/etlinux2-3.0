@@ -1,0 +1,234 @@
+--- ./Makefile.org.orig	2006-03-13 00:04:34.000000000 +0100
++++ ./Makefile.org	2006-03-13 00:05:52.000000000 +0100
+@@ -228,13 +228,13 @@
+ 
+ sigs:	$(SIGS)
+ libcrypto.a.sha1: libcrypto.a
+-	@if egrep 'define OPENSSL_FIPS' $(TOP)/include/openssl/opensslconf.h > /dev/null; then \
++	if egrep 'define OPENSSL_FIPS' $(TOP)/include/openssl/opensslconf.h > /dev/null; then \
+ 		$(RANLIB) libcrypto.a; \
+ 		fips/sha1/fips_standalone_sha1 libcrypto.a > libcrypto.a.sha1; \
+ 	fi
+ 
+ sub_all:
+-	@for i in $(DIRS); \
++	for i in $(DIRS); \
+ 	do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i && echo "making all in $$i..." && \
+@@ -245,7 +245,7 @@
+ 	done;
+ 
+ sub_target:
+-	@for i in $(DIRS); \
++	for i in $(DIRS); \
+ 	do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i && echo "making $(TARGET) in $$i..." && \
+@@ -256,21 +256,21 @@
+ 	done;
+ 
+ libcrypto$(SHLIB_EXT): libcrypto.a
+-	@if [ "$(SHLIB_TARGET)" != "" ]; then \
++	if [ "$(SHLIB_TARGET)" != "" ]; then \
+ 		$(MAKE) SHLIBDIRS=crypto build-shared; \
+ 	else \
+ 		echo "There's no support for shared libraries on this platform" >&2; \
+ 	fi
+ 
+ libssl$(SHLIB_EXT): libcrypto$(SHLIB_EXT) libssl.a
+-	@if [ "$(SHLIB_TARGET)" != "" ]; then \
++	if [ "$(SHLIB_TARGET)" != "" ]; then \
+ 		$(MAKE) SHLIBDIRS=ssl SHLIBDEPS='-lcrypto' build-shared; \
+ 	else \
+ 		echo "There's no support for shared libraries on this platform" >&2; \
+ 	fi
+ 
+ clean-shared:
+-	@for i in $(SHLIBDIRS); do \
++	for i in $(SHLIBDIRS); do \
+ 		if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 			tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 			for j in $${tmp:-x}; do \
+@@ -284,7 +284,7 @@
+ 	done
+ 
+ link-shared:
+-	@if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
++	if [ -n "$(SHARED_LIBS_LINK_EXTS)" ]; then \
+ 		tmp="$(SHARED_LIBS_LINK_EXTS)"; \
+ 		for i in $(SHLIBDIRS); do \
+ 			prev=lib$$i$(SHLIB_EXT); \
+@@ -621,7 +621,7 @@
+ 	done
+ 
+ openssl.pc: Makefile
+-	@ ( echo 'prefix=$(INSTALLTOP)'; \
++	 ( echo 'prefix=$(INSTALLTOP)'; \
+ 	    echo 'exec_prefix=$${prefix}'; \
+ 	    echo 'libdir=$${exec_prefix}/lib'; \
+ 	    echo 'includedir=$${prefix}/include'; \
+@@ -643,7 +643,7 @@
+ 
+ clean:	libclean
+ 	rm -f shlib/*.o *.o core a.out fluff rehash.time testlog make.log cctest cctest.c
+-	@for i in $(DIRS) ;\
++	for i in $(DIRS) ;\
+ 	do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i && echo "making clean in $$i..." && \
+@@ -654,7 +654,7 @@
+ 	rm -f openssl.pc
+ 	rm -f speed.* .pure
+ 	rm -f $(TARFILE)
+-	@for i in $(ONEDIRS) ;\
++	for i in $(ONEDIRS) ;\
+ 	do \
+ 	rm -fr $$i/*; \
+ 	done
+@@ -665,7 +665,7 @@
+ 
+ files:
+ 	$(PERL) $(TOP)/util/files.pl Makefile > $(TOP)/MINFO
+-	@for i in $(DIRS) ;\
++	for i in $(DIRS) ;\
+ 	do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i && echo "making 'files' in $$i..." && \
+@@ -674,9 +674,9 @@
+ 	done;
+ 
+ links:
+-	@$(PERL) $(TOP)/util/mkdir-p.pl include/openssl
+-	@$(PERL) $(TOP)/util/mklink.pl include/openssl $(EXHEADER)
+-	@for i in $(DIRS); do \
++	$(PERL) $(TOP)/util/mkdir-p.pl include/openssl
++	$(PERL) $(TOP)/util/mklink.pl include/openssl $(EXHEADER)
++	for i in $(DIRS); do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i && echo "making links in $$i..." && \
+ 		$(MAKE) CC='${CC}' PLATFORM='${PLATFORM}' CFLAG='${CFLAG}' SDIRS='$(SDIRS)' INSTALLTOP='${INSTALLTOP}' PEX_LIBS='${PEX_LIBS}' EX_LIBS='${EX_LIBS}' BN_ASM='${BN_ASM}' DES_ENC='${DES_ENC}' FIPS_DES_ENC='${FIPS_DES_ENC}' BF_ENC='${BF_ENC}' CAST_ENC='${CAST_ENC}' RC4_ENC='${RC4_ENC}' RC5_ENC='${RC5_ENC}' SHA1_ASM_OBJ='${SHA1_ASM_OBJ}' FIPS_SHA1_ASM_OBJ='${FIPS_SHA1_ASM_OBJ}' MD5_ASM_OBJ='${MD5_ASM_OBJ}' RMD160_ASM_OBJ='${RMD160_ASM_OBJ}' AR='${AR}' PERL='${PERL}' KRB5_INCLUDES='${KRB5_INCLUDES}' LIBKRB5='${LIBKRB5}' links ) || exit 1; \
+@@ -684,12 +684,12 @@
+ 	done;
+ 
+ gentests:
+-	@(cd test && echo "generating dummy tests (if needed)..." && \
++	(cd test && echo "generating dummy tests (if needed)..." && \
+ 	$(MAKE) CC='${CC}' PLATFORM='${PLATFORM}' CFLAG='${CFLAG}' SDIRS='$(SDIRS)' INSTALLTOP='${INSTALLTOP}' PEX_LIBS='${PEX_LIBS}' EX_LIBS='${EX_LIBS}' BN_ASM='${BN_ASM}' DES_ENC='${DES_ENC}' FIPS_DES_ENC='${FIPS_DES_ENC}' BF_ENC='${BF_ENC}' CAST_ENC='${CAST_ENC}' RC4_ENC='${RC4_ENC}' RC5_ENC='${RC5_ENC}' SHA1_ASM_OBJ='${SHA1_ASM_OBJ}' FIPS_SHA1_ASM_OBJ='${FIPS_SHA1_ASM_OBJ}' MD5_ASM_OBJ='${MD5_ASM_OBJ}' RMD160_ASM_OBJ='${RMD160_ASM_OBJ}' AR='${AR}' PROCESSOR='${PROCESSOR}' PERL='${PERL}' RANLIB='${RANLIB}' TESTS='${TESTS}' KRB5_INCLUDES='${KRB5_INCLUDES}' LIBKRB5='${LIBKRB5}' EXE_EXT='${EXE_EXT}' SHARED_LIBS='${SHARED_LIBS}' SHLIB_EXT='${SHLIB_EXT}' SHLIB_TARGET='${SHLIB_TARGET}' TESTS='${TESTS}' OPENSSL_DEBUG_MEMORY=on generate );
+ 
+ dclean:
+ 	rm -f *.bak
+-	@for i in $(DIRS) ;\
++	for i in $(DIRS) ;\
+ 	do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i && echo "making dclean in $$i..." && \
+@@ -699,7 +699,7 @@
+ 
+ rehash: rehash.time
+ rehash.time: certs
+-	@(OPENSSL="`pwd`/util/opensslwrap.sh"; \
++	(OPENSSL="`pwd`/util/opensslwrap.sh"; \
+ 	  OPENSSL_DEBUG_MEMORY=on; \
+ 	  export OPENSSL OPENSSL_DEBUG_MEMORY; \
+ 	  $(PERL) tools/c_rehash certs)
+@@ -708,7 +708,7 @@
+ test:   tests
+ 
+ tests: rehash
+-	@(cd test && echo "testing..." && \
++	(cd test && echo "testing..." && \
+ 	$(MAKE) CC='${CC}' PLATFORM='${PLATFORM}' CFLAG='${CFLAG}' SDIRS='$(SDIRS)' INSTALLTOP='${INSTALLTOP}' PEX_LIBS='${PEX_LIBS}' EX_LIBS='${EX_LIBS}' BN_ASM='${BN_ASM}' DES_ENC='${DES_ENC}' FIPS_DES_ENC='${FIPS_DES_ENC}' BF_ENC='${BF_ENC}' CAST_ENC='${CAST_ENC}' RC4_ENC='${RC4_ENC}' RC5_ENC='${RC5_ENC}' SHA1_ASM_OBJ='${SHA1_ASM_OBJ}' FIPS_SHA1_ASM_OBJ='${FIPS_SHA1_ASM_OBJ}' MD5_ASM_OBJ='${MD5_ASM_OBJ}' RMD160_ASM_OBJ='${RMD160_ASM_OBJ}' AR='${AR}' PROCESSOR='${PROCESSOR}' PERL='${PERL}' RANLIB='${RANLIB}' TESTS='${TESTS}' KRB5_INCLUDES='${KRB5_INCLUDES}' LIBKRB5='${LIBKRB5}' EXE_EXT='${EXE_EXT}' SHARED_LIBS='${SHARED_LIBS}' SHLIB_EXT='${SHLIB_EXT}' SHLIB_TARGET='${SHLIB_TARGET}' TESTS='${TESTS}' OPENSSL_DEBUG_MEMORY=on tests );
+ 	util/shlib_wrap.sh apps/openssl version -a
+ 
+@@ -716,7 +716,7 @@
+ 	@$(PERL) util/selftest.pl
+ 
+ depend:
+-	@for i in $(DIRS) ;\
++	for i in $(DIRS) ;\
+ 	do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i && echo "making dependencies $$i..." && \
+@@ -725,7 +725,7 @@
+ 	done;
+ 
+ lint:
+-	@for i in $(DIRS) ;\
++	for i in $(DIRS) ;\
+ 	do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i && echo "making lint $$i..." && \
+@@ -783,7 +783,7 @@
+ 	ls -l ../$(TARFILE).gz
+ 
+ tar-snap:
+-	@$(TAR) $(TARFLAGS) -cvf - \
++	$(TAR) $(TARFLAGS) -cvf - \
+ 		`find * \! -path CVS/\* \! -path \*/CVS/\* \! -name CVS \! -name .cvsignore \! -name STATUS \! -name TABLE \! -name '*.o' \! -name '*.a' \! -name '*.so' \! -name '*.so.*'  \! -name 'openssl' \! -name '*test' \! -name '.#*' \! -name '*~' | sort` |\
+ 	tardy --user_number=0  --user_name=openssl \
+ 	      --group_number=0 --group_name=openssl \
+@@ -802,26 +802,26 @@
+ install: all install_docs install_sw
+ 
+ install_sw:
+-	@$(PERL) $(TOP)/util/mkdir-p.pl $(INSTALL_PREFIX)$(INSTALLTOP)/bin \
++	$(PERL) $(TOP)/util/mkdir-p.pl $(INSTALL_PREFIX)$(INSTALLTOP)/bin \
+ 		$(INSTALL_PREFIX)$(INSTALLTOP)/lib \
+ 		$(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig \
+ 		$(INSTALL_PREFIX)$(INSTALLTOP)/include/openssl \
+ 		$(INSTALL_PREFIX)$(OPENSSLDIR)/misc \
+ 		$(INSTALL_PREFIX)$(OPENSSLDIR)/certs \
+ 		$(INSTALL_PREFIX)$(OPENSSLDIR)/private
+-	@headerlist="$(EXHEADER)"; for i in $$headerlist ;\
++	headerlist="$(EXHEADER)"; for i in $$headerlist ;\
+ 	do \
+ 	(cp $$i $(INSTALL_PREFIX)$(INSTALLTOP)/include/openssl/$$i; \
+ 	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/include/openssl/$$i ); \
+ 	done;
+-	@for i in $(DIRS) ;\
++	for i in $(DIRS) ;\
+ 	do \
+ 	if [ -d "$$i" ]; then \
+ 		(cd $$i; echo "installing $$i..."; \
+ 		$(MAKE) CC='${CC}' CFLAG='${CFLAG}' INSTALL_PREFIX='${INSTALL_PREFIX}' INSTALLTOP='${INSTALLTOP}' OPENSSLDIR='${OPENSSLDIR}' EX_LIBS='${EX_LIBS}' SDIRS='${SDIRS}' RANLIB='${RANLIB}' EXE_EXT='${EXE_EXT}' install ); \
+ 	fi; \
+ 	done
+-	@for i in $(LIBS) ;\
++	for i in $(LIBS) ;\
+ 	do \
+ 		if [ -f "$$i" ]; then \
+ 		(       echo installing $$i; \
+@@ -835,7 +835,7 @@
+ 			mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i ); \
+ 		fi; \
+ 	done;
+-	@if [ -n "$(SHARED_LIBS)" ]; then \
++	if [ -n "$(SHARED_LIBS)" ]; then \
+ 		tmp="$(SHARED_LIBS)"; \
+ 		for i in $${tmp:-x}; \
+ 		do \
+@@ -867,7 +867,7 @@
+ 			sed -e '1,/^$$/d' doc/openssl-shared.txt; \
+ 		fi; \
+ 	fi
+-	@for i in $(SIGS) ;\
++	for i in $(SIGS) ;\
+ 	do \
+ 		if [ -f "$$i" ]; then \
+ 		(       echo installing $$i; \
+@@ -880,12 +880,12 @@
+ 	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig/openssl.pc
+ 
+ install_docs:
+-	@$(PERL) $(TOP)/util/mkdir-p.pl \
++	$(PERL) $(TOP)/util/mkdir-p.pl \
+ 		$(INSTALL_PREFIX)$(MANDIR)/man1 \
+ 		$(INSTALL_PREFIX)$(MANDIR)/man3 \
+ 		$(INSTALL_PREFIX)$(MANDIR)/man5 \
+ 		$(INSTALL_PREFIX)$(MANDIR)/man7
+-	@pod2man="`cd util; ./pod2mantest $(PERL)`"; \
++	pod2man="`cd util; ./pod2mantest $(PERL)`"; \
+ 	here="`pwd`"; \
+ 	filecase=; \
+ 	if [ "$(PLATFORM)" = "DJGPP" -o "$(PLATFORM)" = "Cygwin" -o "$(PLATFORM)" = "mingw" ]; then \

@@ -1,0 +1,12 @@
+This is etlinux-3.0-devel in its initial status.
+
+FIXME(s):
+
+* Only Etlinux-minimum configuration compiles.
+* Documentation has to be updated.
+* Most of the packages still have to be added.
+
+Generally speaking the whole stuff hasn't been tested very much. So 
+expect problems when compiling/running this.
+
+Davide

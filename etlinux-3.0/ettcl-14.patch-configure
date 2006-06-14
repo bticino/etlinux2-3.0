@@ -1,0 +1,40 @@
+--- ./configure.in.orig	2006-05-29 21:02:36.000000000 +0200
++++ ./configure.in	2006-05-29 21:10:12.000000000 +0200
+@@ -527,7 +527,7 @@
+ 	# results, and the version is kept in special file).
+     
+ 	if test -r /etc/.relid -a "X`uname -n`" = "X`uname -s`" ; then
+-	    system=MP-RAS-`awk '{print $3}' /etc/.relid'`
++	    system=MP-RAS-`awk '{print $3}' /etc/.relid`
+ 	fi
+ 	if test "`uname -s`" = "AIX" ; then
+ 	    system=AIX-`uname -v`.`uname -r`
+@@ -970,7 +970,7 @@
+ 	# results, and the version is kept in special file).
+     
+ 	if test -r /etc/.relid -a "X`uname -n`" = "X`uname -s`" ; then
+-	    system=MP-RAS-`awk '{print $3}' /etc/.relid'`
++	    system=MP-RAS-`awk '{print $3}' /etc/.relid`
+ 	fi
+ 	if test "`uname -s`" = "AIX" ; then
+ 	    system=AIX-`uname -v`.`uname -r`
+--- ./configure.orig	2006-05-29 21:02:36.000000000 +0200
++++ ./configure	2006-05-29 21:09:53.000000000 +0200
+@@ -3615,7 +3615,7 @@
+ 	# results, and the version is kept in special file).
+     
+ 	if test -r /etc/.relid -a "X`uname -n`" = "X`uname -s`" ; then
+-	    system=MP-RAS-`awk '{print $3}' /etc/.relid'`
++	    system=MP-RAS-`awk '{print $3}' /etc/.relid`
+ 	fi
+ 	if test "`uname -s`" = "AIX" ; then
+ 	    system=AIX-`uname -v`.`uname -r`
+@@ -4369,7 +4369,7 @@
+ 	# results, and the version is kept in special file).
+     
+ 	if test -r /etc/.relid -a "X`uname -n`" = "X`uname -s`" ; then
+-	    system=MP-RAS-`awk '{print $3}' /etc/.relid'`
++	    system=MP-RAS-`awk '{print $3}' /etc/.relid`
+ 	fi
+ 	if test "`uname -s`" = "AIX" ; then
+ 	    system=AIX-`uname -v`.`uname -r`

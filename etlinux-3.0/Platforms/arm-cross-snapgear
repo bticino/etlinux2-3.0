@@ -1,0 +1,20 @@
+
+# Here we have the whole toolchain, so don't set CC alone
+CROSS_COMPILE = /opt/snapgear-toolchain/bin/arm-linux-
+# Still, set CC, as the user may have a default in the environment
+CC = $(CROSS_COMPILE)gcc
+
+# Define ARCH and TARGETSYSTEM as required
+ARCH := arm
+TARGETSYSTEM := arm-generic-linux
+
+# force glibc to be copied from hhl stuff
+PLATFORMPKG := arm-snapgear-glibc
+
+# Where libraries are placed on the host
+ETLINUX_LDFLAGS := -L /opt/snapgear-toolchain/arm-linux/lib
+
+# Definitions needed for ncurses
+CXX = $(CROSS_COMPILE)c++
+RANLIB = $(CROSS_COMPILE)ranlib
+AR = $(CROSS_COMPILE)ar

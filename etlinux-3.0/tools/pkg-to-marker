@@ -1,0 +1,5 @@
+#!/bin/bash
+
+for n in $*; do
+    echo $n | sed -e 's/.tar.gz$//' -e 's/^/tmp\//' -e 's/$/.built/'
+done

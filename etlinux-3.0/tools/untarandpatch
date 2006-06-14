@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# A simple tool to extract and patch a package. On failure the uncompressed
+# directory is removed
+
+if [ $# -ne 1 ]; then
+    echo "$0: please pass the tar.gz name on command line" >& 2
+    exit 1
+fi
+
+if [ "x$SOURCEDIR" = "x" ]; then SOURCEDIR=.; fi
+
+tar=$1
+base=`basename $tar .tar.gz`
+patches="$SOURCEDIR/$base.patch*"
+
+declare -i error=0
+
+echo ==== Extracting package $base from sources;
+tar xzf $tar --no-same-owner || error=1
+
+for n in $patches; do
+    if [ ! -r $n ]; then continue; fi
+    if [ $error -eq 0 ]; then
+	cat=cat; if file $n | grep gzip > /dev/null; then cat="gzip -dc"; fi
+	echo "    ==== Patching $base with $n";
+        $cat $n | (cd $base && patch -p1) || error=1
+    fi
+done
+
+if [ $error -ne 0 ]; then
+    echo "**** Error; removing $base" >& 2
+    rm -rf $base
+    exit 1
+fi
+
+exit 0
+
+

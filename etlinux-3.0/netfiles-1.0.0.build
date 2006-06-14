@@ -1,0 +1,30 @@
+# 
+# net-files: trivial stuff
+#
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	find . -depth -print | cpio -pdamu $TARGET
+install-end
+
+htmldesc-begin --------------------------------------------
+htmldesc-end ---------------------------------------------------
+
+htmllist-begin ---------------------------------------------------
+
+<li><code>/etc/inetd.conf</code>, <code>/etc/nsswitch.conf</code>
+	and <code>/etc/init.d/scripts/S20inetd</code> are copied
+	from  __PACKAGE__.
+
+htmllist-end -----------------------------------------------------
+
+
+inetd.conf
+S20inetd
+nsswitch.conf
+
+netstat

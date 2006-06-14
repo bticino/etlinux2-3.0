@@ -1,0 +1,27 @@
+# 
+# Building sample-cgi 
+#
+
+requires: ettcl-httpd
+source: ettcl
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+        cd Applications/httpd/sample-cgi
+        find . -depth ! -name README -print | cpio -pdamvu $TARGET/html
+install-end
+
+htmldesc-begin
+htmldesc-end
+
+htmllist-begin
+<li><code>/html/cgi-bin/*</code> and the entry point
+        <code>/html/cgidemo.html</code> come from __PACKAGE__.
+htmllist-end
+
+
+

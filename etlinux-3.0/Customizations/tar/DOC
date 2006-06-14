@@ -1,0 +1,6 @@
+This customization creates a tar of the target tree and places it under 
+Trees.
+If the environment variable ETLINUX_TAR is not empty, the name of the 
+resulting tar is $ETLINUX_TAR.tar.gz. Otherwise the name is $CONFIG.tar.gz.
+When the tar is extracted, the target tree is created under ./$ETLINUX_TAR 
+(or ./$CONFIG).

@@ -1,0 +1,32 @@
+#
+# Building netkit-base
+#
+provides: ping inetd
+
+# compiling is easy
+build-begin
+	./configure
+	make clean ; make CC=$CC
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin $TARGET/sbin
+	install -c ping/ping $TARGET/bin
+	${STRIP:-strip} $TARGET/bin/ping
+	install -c inetd/inetd $TARGET/sbin
+	${STRIP:-strip} $TARGET/sbin/inetd
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li>the following programs (in <code>/bin</code> and <code>/sbin</code>)
+	come from __PACKAGE__: <code>ping inetd</code>
+
+htmllist-end -----------------------------------------------------

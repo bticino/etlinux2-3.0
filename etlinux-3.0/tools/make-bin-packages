@@ -1,0 +1,584 @@
+#
+# Script for automatically making a binary distribution
+# Copyright (C) Davide Ciminaghi <ciminaghi@gnudd.com> 
+#				 <ciminaghi@prosa.it> 2005
+#
+# With an arg <arg>, reads the file <arg> and builds binary packages 
+# accordingly. 
+# With no args, reads all files named build.SOMETHING under $(pwd) and 
+# performs multiple builds of binary packages (one for each file) 
+# accordingly.
+# 
+# Logs compilation results for each build to file log_SOMETHING
+# under directory $(pwd)/log/
+# Furthermore produces a build summary named result_SOMETHING
+#
+# Run with no args => Minimal log info
+# Run with -v or --verbose => verbose build => max. log info
+
+#
+# Format of build.SOMETHING
+#
+# platforms=<list_of_platforms>
+# packages=<list_of_packages>
+# custom=<list_of_customizations>
+#
+# In case packages are specified, dependencies are calculated
+# according to packages build files.
+# set -x
+verbose=0
+
+###########################################
+#                                         #
+# Get options				  #
+#                                         #
+###########################################
+get_options() {
+    while [ "$1" != "" ]; do
+        case $1 in
+                -v*)
+			verbose=1
+                        ;;
+                --verbose*)
+                        verbose=1
+                        ;;
+		*)
+			bld_file=$1
+        esac
+        shift
+    done
+}
+
+###########################################
+#                                         #
+# Check whether user is root and find     #
+# out what program shall be used to       #
+# run commands as root                    #
+#                                         #
+###########################################
+check_root() {
+    echo "########################################"
+    echo "# You need to be root for some         #"
+    echo "# programs to work correctly.          #"
+    echo "# I'm going to check who you are       #"
+    echo "########################################"    
+    if [ "$(whoami)" != "root" ] ; then
+	SUDO=$(which sudo)
+	FAKEROOT=$(which fakeroot)
+	SU=$(which su)
+	i=0
+	echo "Warning. You need to be root to do this"
+	echo "Make a choice [0]"
+	echo "Skip commands which need you to be root (0)"
+	choices[0]=Skip
+	i=$(($i+1))
+	if [ "$SUDO" != "" ] ; then
+	    echo "Run $SUDO ($i)"
+	    choices[$i]=$SUDO
+	    i=$(($i+1))
+	fi
+	if [ "$FAKEROOT" != "" ] ; then
+	    echo "Run $FAKEROOT ($i)"
+	    choices[$i]=$FAKEROOT
+	    i=$(($i+1))
+	fi
+	read REPLY
+	ROOTPRG=${choices[$REPLY]}
+    else
+        echo "OK. You're root. Let's go on"
+    fi
+}
+
+###########################################
+#                                         #
+# Run $1 as root using $ROOTPRG           #
+#                                         #
+###########################################
+run_command_as_root() {
+    case "$ROOTPRG" in 
+	Skip) echo "Command skipped because you're not root" ;;
+	*sudo) echo $ROOTPRG $@ > /dev/null ; $ROOTPRG -c \"$@\" ;; 
+	*su) echo $ROOTPRG -c \"$@\" > /dev/null ; $ROOTPRG -c \"$@\"  ;;
+	*fakeroot) echo $ROOTPRG -- $@ > /dev/null ; $ROOTPRG -- $@  ;;
+	*) echo $ROOTPRG $@ > /dev/null ; $ROOTPRG $@  ;;
+    esac
+}
+
+
+###########################################
+#                                         #
+# Add something to build log      	  #
+#                                         #
+###########################################
+log() {
+    	echo -e $1 | tee -a  $log_file
+    	return 0
+}
+
+log_result() {
+	echo -e $1 | tee -a $result_file
+	return 0
+}
+
+###########################################
+#                                         #
+# Issue a warning and log it              #
+#                                         #
+###########################################
+warning() {
+	echo $1 1>&2
+	log $1
+}
+
+###########################################
+#                                         #
+# Calculate required packages for $1	  #
+#                                         #
+###########################################
+required_packages() {
+	tmpfile=$(tempfile)
+	echo "package = $1" > $tmpfile
+	{ out="$($SOURCEDIR/tools/extractpackages $tmpfile)" && \
+	  echo $out ; } || return 1
+	rm $tmpfile
+	return 0
+}
+
+###########################################
+#                                         #
+# Make ramdisk in $1, CONFIG=$2,	  #
+#		  CUSTOM=$3 ramdisk	  #
+#		output to $4		  #
+#                                         #
+###########################################
+make_ramdisk() {
+	export CONFIG="$2"
+	export PLATFORM=""
+	export CUSTOM="$3 ramdisk"
+	export PACKAGES=""
+	export SOURCEDIR=""
+	run_command_as_root make -C $1 && \
+	mv $1/Trees/ramdisk.gz $4 || \
+	{ echo "Couldn't generate ramdisk" ; exit 1 ; }
+}
+
+##########################################
+# 					 #
+# Create configuration file              #
+# (dir $1/Configs)     			 #
+#					 #
+##########################################
+create_config_file() {
+	out=$1/Configs/Etlinux
+	mkdir -p $1/Configs
+	echo "# Configuration : Etlinux" > $out
+	echo "# Platform : $platform" >> $out
+	echo "# Automatically generated configuration file ($(date))" >> $out
+	echo ""
+}
+
+##########################################
+# 					 #
+# Create README (in $1)		 	 #
+#					 #
+##########################################
+create_README() {
+[ ! -z "$target" ] && echo_target="(target is $target)" || echo_target=
+cat > $1 << EOF
+ This is version $version of Etlinux, binary distribution for platform $platform $echo_target.
+ This file was automatically generated on $(hostname) ($(date)).
+ Host arch is \
+ $(uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ \
+  -e s/sa110/arm/)
+
+ To install this distribution, just type make in this directory as superuser.
+ The resulting tree will be under ./Trees/Etlinux .
+
+EOF
+}
+
+###########################################
+#                                         #
+# Run builds for a platform		  #
+# $1 = platform				  #
+#                                         #
+###########################################
+run_platform_build() {
+	export PLATFORM=$1
+	platformpkgs=$(grep "PLATFORMPKG[ ]*:=[ ]*" $SOURCEDIR/Platforms/$1 \
+	               | sed -e 's/PLATFORMPKG[ ]*:=[ ]*\(.*\)/\1/')
+	echo "Running builds for platform $1"
+	echo "Platform packages are $platformpkgs"
+	# Set up names 
+	[ ! -z "$target" ] && eval etlinux_base=etlinux-$version-$target || \
+	eval etlinux_base=etlinux-$version-$platform
+	TARBALL=$etlinux_base.tar.gz
+	RAMDISK=ramdisk-$etlinux_base.gz
+	TARBALL_TREE=tree-$etlinux_base.tar.gz
+	RAMDISK_MINIMUM=ramdisk-$etlinux_base-minimum.gz
+	TARBALL_TREE_MINIMUM=tree-$etlinux_base-minimum.tar.gz
+
+	export PLATFORMPKG=$platformpkgs
+	stat=1
+	if [ "$verbose" = "1" ] ; then 
+		grep_pattern="."
+	else
+		grep_pattern="===="
+	fi
+	tmpfile=$(tempfile)
+	log "\n==== Compiling packages $packages ....\n"
+	cp $SOURCEDIR/Makefile $platform_dir
+	log_result "Date = $(date)"
+	log_result "Host = $(hostname)"
+	log_result "Platform $1"
+	built_packages=""
+	current_packages=""
+	packages="$packages $platformpkgs"
+	install_packages="$install_packages $platformpkgs"
+	create_config_file $platform_dir
+	create_README $platform_dir/README
+	for pkg in $packages ; do
+		current_packages=$(required_packages $pkg) || \
+		 { echo "***********************************" ; \
+		   echo "* Building package(s) $pkg:  *" ; \
+		   echo "* Dependency not satisfied        *" ; \
+		   echo "**********************************" ; \
+		   log_result "Package $pkg : error" ;  \
+		   log "Package $pkg: dependency error" ; \
+		   continue ; }
+		# Don't build the same package twice
+		for p in $built_packages ; do
+			current_packages=$(echo "$current_packages" | \
+			sed -e "s/$p//g")
+		done
+		# Avoid current_packages containing spaces only
+		current_packages=$(echo $current_packages | \
+				   sed -e 's/$[ ]*^//')
+		if [ "$current_packages" = "" ] ; then 	
+			stat=1
+			continue 
+		fi
+		export PACKAGES="$current_packages"
+		echo "***********************************************"
+		echo "* Building package(s) $PACKAGES *"
+		echo "***********************************************"
+		run_command_as_root make > $tmpfile 2>&1 && \
+			log_result "Package $pkg : success" || \
+			{ log_result "Package $pkg : error" ; stat=0 ;}
+		built_packages="$built_packages $current_packages"
+		# Force verbose mode in case of failed compilation
+		if [ "$stat" = "0" ] ; then 
+			local_verbose=1
+		else
+			local_verbose=$verbose
+		fi
+		if [ "$local_verbose" = "1" ] ; then 
+			grep_pattern="."
+		else
+			grep_pattern="===="
+		fi
+		cat $tmpfile | grep "$grep_pattern" | tee -a $log_file 
+		rm $tmpfile
+		# In case of compilation errors, goto next package
+		if [ "$stat" = "0" ] ; then 
+			stat=1
+			continue
+		fi
+		# If package was successfully compiled, also build the 
+		# relevant binary and add the package to the Etlinux 
+		# build file
+		echo "***********************************************"
+		echo "* Building binary package(s) $PACKAGES *"
+		echo "***********************************************"
+		for p in $PACKAGES ; do 
+			if [ -d $p.bin ] ; then 
+				echo "$p.bin is already there. Skipping"
+			else
+				run_command_as_root make $p.bin && \
+				run_command_as_root \
+				cp $SOURCEDIR/$p.build $platform_dir || 
+				{ echo \*\*\* WARNING: ERROR BUILDING BINARY ;
+			 	 echo \*\*\* REMOVING $p.bin ; 
+			 	 run_command_as_root rm -fr $platform_dir/$p.bin \
+			  	$platform_dir/$p.build ; continue ; }
+			fi
+			# This script is run just after compiling the binary 
+			# package. It can be used to replace some of the 
+			# binary files. Just used for ld.so-1.7.14.bin 
+			# which is a big mess
+			extra_script=../../RUN.$platform.$p.bin
+			if [ -x $extra_script ] ; then 
+				echo "Running $extra_script" 
+				run_command_as_root ./$extra_script || \
+				{ echo "Error running $extra_script" ; exit 1 ; }
+			fi
+			# We must finally update the configuration file, 
+			# but only if the package is in install_packages
+			[ ! -z "$(echo $install_packages | grep $p)" ] && \
+			echo "package = $p" >> $platform_dir/Configs/Etlinux
+		done
+	done
+
+	log "run_platform_build: stat=$stat"
+
+	# Build a Platforms directory with a minimal content
+	plf_default_file=$platform_dir/Platforms/default
+	plf_out_file=$platform_dir/Platforms/$platform
+	plf_in_file=$SOURCEDIR/Platforms/$platform
+	tools_out_file=$platform_dir/tools
+	tools_in_file=$SORCEDIR/tools
+	run_command_as_root \
+	mkdir -p $platform_dir/Platforms && \
+	echo "### This file was automatically generated on $(date)" > \
+	$plf_default_file && \
+	echo "### Default platform is $platform" >> $plf_default_file && \
+	echo "PLATFORM := $platform" >> $plf_default_file && \
+	cp $plf_in_file $plf_out_file || \
+	{ echo "Couldn't create platform files" ; exit 1 ; }
+
+	# add more necessary files
+	run_command_as_root cp $SOURCEDIR/_base.build $platform_dir/
+	run_command_as_root  \
+	cp $SOURCEDIR/Html.head $SOURCEDIR/Html.mid $SOURCEDIR/Html.tail \
+	$platform_dir/
+	mkdir -p $platform_dir/tools $platform_dir/Customizations
+	files=$(find $SOURCEDIR/tools  -path  '*CVS*'  -prune  -o -print)
+	for f in $files ; do
+		run_command_as_root cp -dR $f $platform_dir/tools
+	done
+	files=$(find $SOURCEDIR/Customizations  -path  '*CVS*'  -prune  -o -print)
+	for f in $files ; do
+        	run_command_as_root cp -dR $f $platform_dir/Customizations
+	done
+	run_command_as_root cp $SOURCEDIR/_base.tar.gz $platform_dir
+	
+	# Finally remove all build dirs ...
+	for p in $packages ; do
+		src=$($SOURCEDIR/tools/getsource $p) && \
+		run_command_as_root rm -fr $platform_dir/$src
+	done
+	# ... and extra stuff
+	run_command_as_root cd $platform_dir && \
+	rm -fr Trees Makefile.auto tmp
+	rm -f $configfile
+
+	# Make a tar file
+	echo "### Making tar file"
+	cd $platform_dir/../ && tar zcf $TARBALL $platform
+
+	# Make a RAMDISK and also check whether tar is ok
+	echo "### Making ramdisk"
+	cp $platform_dir/../$TARBALL /tmp 
+	run_command_as_root cd /tmp && rm -fr $platform && \
+	tar zxf $TARBALL || \
+	{ echo "Couldn't untar binary distribution tar" ; exit 1 ; } 
+	(make_ramdisk /tmp/$platform Etlinux "$custom" \
+	$platform_dir/../$RAMDISK) || 
+	{ echo "Couldn't make ramdisk" ; exit 1 ; }
+
+	# Make a TAR of the target tree
+	(cd /tmp/$platform/Trees/Etlinux && \
+	tar zcf $platform_dir/../$TARBALL_TREE \
+	. ) || { echo "Couldn't make tar of target tree" ; exit 1 ; }
+
+	# Make a RAMDISK in minimal configuration
+	echo "### Making ramdisk in minimal configuration"
+	cp $SOURCEDIR/Configs/Etlinux-minimum /tmp/$platform/Configs/
+	(make_ramdisk /tmp/$platform Etlinux-minimum "$custom" \
+	$platform_dir/../$RAMDISK_MINIMUM)
+
+	# Make a TAR of the target tree in minimal configuration
+	(cd /tmp/$platform/Trees/Etlinux-minimum && \
+	tar zcf $platform_dir/../$TARBALL_TREE_MINIMUM \
+	. ) || { echo "Couldn't make tar of target tree" ; exit 1 ; }
+
+	return $stat
+}
+
+###########################################
+#                                         #
+# Run builds given build file		  #
+# $1 = path of build file		  #
+# $2 = path of install file		  #
+#                                         #
+###########################################
+run_build() {
+	tst_file=$1
+	install_file=$2
+	tst=$(echo $tst_file | sed -e 's/^.*build\.//')
+	tst_build_dir=$BUILD_DIR/$tst
+	pushd $(pwd) > /dev/null
+	mkdir -p  $tst_build_dir || exit 1	
+	log_file=$LOG_DIR/log_$tst
+	result_file=$LOG_DIR/result_$tst
+	log "==========================================="
+	log "Starting build $tst, current time is $(date)"
+	log "==========================================="
+	build_start_time=$(date +%s)
+	platforms=""
+	packages=""
+	install_packages=""
+	custom=""
+	source $tst_file
+	source $install_file
+	if [ "$platforms" = "" ] ; then
+		warning "Missing \"platforms=\" in build config file. \
+			 Defaulting to host-native"
+		platforms="host-native"
+	elif [ "$platforms" = "all" ] ; then 
+		platforms=$(ls $SOURCEDIR/Platforms)
+	fi
+	if [ "$packages" = "" ] ; then 
+		packages=$(ls $SOURCEDIR/*.build)
+	fi
+	export CUSTOM=$custom
+	for platform in $platforms ; do
+		platform_dir=$tst_build_dir/$platform
+		pushd $(pwd) > /dev/null
+		mkdir -p $platform_dir && cd $platform_dir
+		if run_platform_build $platform  ; then 
+			success="failed"
+		else
+			success="succeded"
+		fi
+		popd
+	done
+	build_end_time=$(date +%s)
+	build_time=$(($build_end_time - $build_start_time))
+	build_bogo=$((($build_time * $bogomips)/1000))
+	log "==========================================="
+	log "Build $tst done. Current time is $(date)   "
+	log "Build data:                                "
+	log "Platforms = $platforms			"
+	log "Packages = $packages                       "
+	log "Status = $success				"
+	log "Time = $test_time secs			"
+	log "Cpu bogomips = $bogomips			"
+	log "kbogoMips  seconds = $test_bogo		"
+	log "==========================================="
+	popd
+	
+}
+
+#
+# Taken from tools/extractpackages and slightly modified
+# This function adds a package to list, and possibly marks what it provides
+#
+addpackage()
+{
+    install_packages="$install_packages $(basename $1)"
+    addedpackage=1
+    p=`awk '/^[ \t]*provides: */ {print $2}' $1.build`
+    if [ -z "$p" ]; then return; fi
+    for mp in $p; do
+	name=`echo provide_$mp`
+	value=`eval echo \\${$name}`
+	if [ ! -z "$value" ]; then
+	    other=`eval echo \\${$name}`
+	    echo "conflict: both $(basename $1) and $(basename $value) provide $mp" >& 2
+	    choice=1
+	    while true ; do
+	    	echo "Please enter 1 to choose $(basename $value) or 2 for \
+$(basename $1) . Default is $choice"
+	    	read choice
+		case $choice in
+			1)
+				install_packages=$(echo $install_packages \
+				| sed -e "s/$(basename $1)//g")
+				break
+				;;
+			2)
+				install_packages=$(echo $install_packages \
+				| sed -e "s/$(basename $value)/$(basename $1)/g")
+				break
+				;;
+			"")
+				break
+				;;
+			*)
+				continue
+				;;
+		esac
+	    done
+	    return
+	fi
+	eval ${name}=$1
+    done
+}
+
+###########################################
+#                                         #
+# Check build given build file		  #
+# $1 = path of build file		  #
+# Checks redundant packages and creates   #
+# file $1.install, which contains a list  #
+# of packages to be installed 		  #
+#                                         #
+###########################################
+# Always run in a sub-shell because it creates provide_* variables, 
+# which could annoy us in case of multiple build files
+create_do_install_file() {
+	log ""
+	log "Build file $1"
+	log "Looking for conflicts in packages ..."
+	source $1
+	install_packages=""
+	for p in $packages ; do
+		[ -f $SOURCEDIR/$p.build ] && addpackage $SOURCEDIR/$p || { 
+		log "Warning: $p is listed but I can't find it in $SOURCEDIR" ;
+		log "Skipping to next package" ; }
+	done
+	echo "install_packages=\"$install_packages\"" > install.$(basename $1)
+	# Install file will be sourced later
+	install_packages=""
+	echo "Install file created: install.$(basename $1)"
+}
+
+###########################################
+#                                         #
+# Main					  #
+#                                         #
+###########################################
+check_root
+get_options $@
+
+# Calculate cpu bogomips, integer format
+bogomips=$(cat /proc/cpuinfo | grep bogomips | cut -d ' ' -f 2 | \
+sed -e 's/\([0-9]*\)\.[0-9]*/\1/')
+
+if [ "$verbose" = "1" ] ; then 
+	echo "Verbose operation"
+fi
+
+BUILD_DIR=${BUILD_DIR:-$(pwd)}
+LOG_DIR=$BUILD_DIR/log
+
+if [ "$SOURCEDIR" = "" ] ; then
+	echo "******************************" > /dev/stderr
+	echo "* SOURCEDIR is not defined ! *" > /dev/stderr
+	echo "******************************" > /dev/stderr
+	exit 1
+fi
+
+[ ! -d $BUILD_DIR ] && mkdir -p $BUILD_DIR 
+[ ! -d $LOG_DIR ] && mkdir -p $LOG_DIR
+
+trap  "echo Builds interrupted !!!! ; log \"\nBuild interrupted at $(date)\n\" ; exit 1" INT 
+
+if [ "$bld_file" = "" ] ; then
+	for f in $(ls $BUILD_DIR/build.*) ; do 
+		[ -f install.$(basename $f) ] && \
+		log "install.$(basename $f) exists. Not creating it" || \
+		(create_do_install_file $f)
+	done
+	for f in $(ls $BUILD_DIR/build.*) ; do
+		run_build $f $BUILD_DIR/install.$(basename $f)
+	done
+else
+	[  -f install.$bld_file ] && \
+	log "install.$bld_file exists. Not creating it" || \
+	(create_do_install_file $bld_file)
+	run_build $bld_file  $BUILD_DIR/install.$(basename $bld_file)
+fi
+
+

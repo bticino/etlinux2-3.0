@@ -1,0 +1,32 @@
+#
+# Building gzip
+#
+
+# compiling is easy
+build-begin
+	if ! [ -f config.status ]; then \
+		./configure --host=$TARGETSYSTEM || exit 1; \
+	fi
+	make
+	${STRIP:-strip} gzip
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	install	-c gzip $TARGET/bin
+	ln -sf gzip $TARGET/bin/gunzip
+	ln -sf gzip $TARGET/bin/zcat
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/bin/gzip</code> comes from __PACKAGE__. <code>/bin/gunzip</code>
+	and <code>/bin/zcat</code> are symbolic links to <code>gzip</code>.
+
+htmllist-end -----------------------------------------------------

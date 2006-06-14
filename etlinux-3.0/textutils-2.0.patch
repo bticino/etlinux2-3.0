@@ -1,0 +1,21 @@
+diff -Naur textutils-2.0.orig/configure textutils-2.0/configure
+--- textutils-2.0.orig/configure	Thu May 19 12:32:31 2005
++++ textutils-2.0/configure	Thu May 19 12:27:46 2005
+@@ -6751,7 +6751,7 @@
+ #define ARGMATCH_DIE_DECL extern void usage ()
+ EOF
+ 
+-
++if false ; then
+         echo $ac_n "checking whether setvbuf arguments are reversed""... $ac_c" 1>&6
+ echo "configure:6750: checking whether setvbuf arguments are reversed" >&5
+ if eval "test \"\${ac_cv_func_setvbuf_reversed+set}\" = set"; then
+@@ -6797,7 +6797,7 @@
+ EOF
+ 
+ fi
+-
++fi # if false 
+ 
+     am_getline_needs_run_time_check=no
+   echo $ac_n "checking for getline""... $ac_c" 1>&6

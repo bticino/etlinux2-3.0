@@ -1,0 +1,35 @@
+#
+# Building shellutils
+#
+
+# compiling is easy
+build-begin
+	if ! [ -f config.status ]; then \
+		./configure --host=$TARGETSYSTEM --disable-nls || exit 1; \
+	fi
+	make SUBDIRS="lib src"
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	files="basename date echo env expr nice pwd sleep stty \
+		tty uname"
+	for n in $files; do ${STRIP:-strip} src/$n; done
+	for n in $files true false; do
+		install -c src/$n $TARGET/bin;
+	 done
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li>In <code>/bin</code> the following files come from __PACKAGE__:
+	<code>basename date echo env expr false nice pwd sleep stty
+		true tty uname</code>
+	
+htmllist-end -----------------------------------------------------

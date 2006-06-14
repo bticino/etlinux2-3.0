@@ -1,0 +1,12 @@
+#!/bin/sh
+
+awk '
+    /^\#/	{next}
+
+    /build-begin/ {B=1; next}
+    /build-end/   {B=0}
+
+    B {print}
+
+    {next}
+' $*

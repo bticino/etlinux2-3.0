@@ -1,0 +1,194 @@
+# 
+# Building init for etlinux
+#
+requires: ettcl
+source: ettcl
+
+# nothing to compile
+build-begin
+build-end
+
+# only install
+install-begin
+	cd  Applications/init && find . -depth ! -name README -print | \
+		cpio -pdamu $TARGET
+	chmod +x $TARGET/sbin/halt $TARGET/sbin/reboot
+install-end
+
+htmldesc-begin --------------------------------------------
+
+<h2>Init</h2>
+
+<p>The version of <code>init</code> included in this system is the
+one from <code>ettcl-14</code>.
+
+The documentation below comes from Ettcl documentation,
+available from:
+<ul>
+<li><a href="http://ar.linux.it/software/ettcl/">http://ar.linux.it/software/ettcl/#Init</a>
+<li><a href="http://www.linux.it/~rubini/software/ettcl/">http://www.linux.it/~rubini/software/ettcl/#Init</a>
+</ul>
+
+<p>The <var>init</var> application is the code of EtLinux. It's designed to run
+as process 1 of an embedded system, and it reads the various
+configuration files to know how the system is set up.
+
+
+<h3>Boot time</h3>
+
+<p>When run, <var>/sbin/init</var> first reads <code>/etc/init.d/options</code>; the
+file sets elements of the <var>options</var> array, to configure system
+operation. It can also set the default command search path by setting
+<code>env(PATH)</code>, and invoke other Tcl commands. Please remember that
+evaluating this file is the first thing <var>init</var> does when it starts.
+
+<p>These options are used to select <var>init</var> behavior during system boot. 
+They are listed in the same order as they are used.
+
+<dl>
+
+<br><dt><code>options(fsck.root)</code>
+<dd>This boolean option chooses whether the root filesystem is checked
+at boot time, using either <code>/sbin/fsck.minix</code> or, if available,
+<code>/sbin/fsck</code>. The device hosting the root filesystem is
+assumed to be the first word in <code>/etc/fstab</code>
+
+<p>If your system runs with NFS root, or if you don't ship an
+fsck program, you should set <var>options(fsck.root)</var> to zero.
+
+<br><dt><code>options(remount)</code>
+<dd>This boolean options states whether the root filesystem must be
+remounted in read-write mode. This option must be set to zero
+if you use NFS root, if you mount read-write at boot time (in
+that case you can't set <var>options(fsck.root)</var> either, or
+if you want to run with a read-only root filesystem (in that
+case you'll need to set up at least <code>/tmp</code> and <code>/var/run</code>
+as separate partitions.
+
+<p>Note that support for running with a read-only root filesystem is
+not complete, as <var>init</var> calls the Tcl <var>exec</var> command a few
+times before mounting all filesystems, and the <var>exec</var> command
+creates files in <code>/tmp</code>. You'll need to change <var>init</var> to
+support a read-only root filesystem.
+
+<br><dt><code>options(proc)</code>
+<dd>This boolean option states whether the <code>proc</code> filesystem must
+be mounted under <code>/proc</code>. It's usually set to 1, and you'll
+need to change a lot of applications if you choose not to mount
+<code>/proc</code>.
+
+<br><dt><code>options(swap)</code>
+<dd>This boolean option selects whether or not to run
+"<code>/sbin/swapon -a</code>". To set it, you need to have the
+<var>swapon</var> executable installed and at least one entry for
+swap space in <code>/etc/fstab</code>
+
+<br><dt><code>options(fsck)</code>
+<dd>If this boolean option is set to 1, then <var>init</var> will
+execute "<code>fsck -R -A -V -a</code>". You'll need an executable
+called <var>fsck</var> in your command search path, and a valid
+<code>/etc/fstab</code>.
+
+<br><dt><code>options(mount)</code>
+<dd>This option is, once again, boolean. It selects whether or
+not all local filesystems must be mounted. If set, you'll need
+to have external <var>mount</var> and <var>umount</var> commands. <var>Init</var>
+will invoke "<code>mount -a -t nonfs</code>" after umounting <code>/proc</code>. 
+If you need to mount NFS volumes, you can do that later using
+a script in <code>/etc/init.d/scripts</code>.
+
+<br><dt><code>options(lowmem)</code>
+<dd>This option, if set, specifies the three watermarks used for
+memory management: three value that will be written to
+<code>/proc/sys/vm/freepages</code>. Please note that recent 2.4
+kernels do not have that file any more and use
+a different mechanism for setting memory limits. 
+Since hosts running 2.4 are typically not memory constrained,
+no memory control is offered for 2.4.  If the option is not set,
+the <var>init</var> process won't do anything.
+
+<br><dt><code>options(rm)</code>
+<dd>The boolean option controls whether or not <var>init</var> will try
+to remove all files in <code>/var/run</code> and <code>/tmp</code>. If it does,
+it will recreate <code>/var/run/wtmp</code>, to login programs won't
+complain (if installed).
+
+<br><dt><code>options(modules)</code>
+<dd>The option, if set, must be a list of module names, that will be
+passed to <var>/sbin/insmod</var>, one at a time. To load modules
+you'll need a version of <var>insmod</var> that is compatible with
+the kernel you are running.
+
+</dl>
+
+<p>After processing the options described, he <var>init</var> program also reads
+all files in the directory <code>/etc/init.d/options.d</code> so system
+applications can set their options without modifying the main file. Note
+that all files in the directory are source as Tcl scripts, so you can
+actually do more than setting options, if you need that. The files
+are read in alphanumeric order.
+
+<p>The next step in booting is running all scripts found in
+<code>/etc/init.d/scripts</code>. The name of each script must start with
+"<code>S</code>" followed by a two-digit number. These scripts are run once
+only. Typical tasks for these scripts are setting up the network, or
+mounting NFS filesystems.
+
+<p>Then, <var>init</var> sources all scripts in <code>/etc/init.d/respawn</code>,
+restarting each of them as soon as it terminates.  The name of each
+script must start with "<code>S</code>" followed by a two-digit number. 
+These scripts are usually terminal login (or the shell running
+on the serial console).
+
+<p>Finally, any regular file found in /etc/applications is run as a
+separate process. These processes are not restarted when they terminate,
+so if your application may terminate as part of normal operation, you should
+either place it in <code>/etc/init.d/respawn</code> or arrange for restarting
+in the Tcl file.
+
+<p>Please note that everything that is started by <var>init</var> (i.e., all
+scripts in <code>scripts</code>, in <code>respawn</code>, and in
+<code>applications</code>) are Tcl scripts. They are read as Tcl commands
+using the <var>source</var> command, even though the process that reads the
+file is not <var>init</var> but a child process.  If one of your applications
+is an executable file, you should write a short wrapper script like
+this one:
+
+<pre>sys_exec /your/path/to/application
+</pre>
+
+<p>Please don't use "exec" in this case, to avoid running two processes
+where one will do.  Any file in <code>scripts</code> and <code>respawn</code> whose
+name doesn't match "<code>S*</code>" will not be read. Any subdirectory of
+<code>applications</code> is ignored, so you can use for example a directory
+called <code>warehouse</code> as a repository of applications that you want to
+keep around but don't want to automatically run.
+
+<h3>Shutdown time</h3>
+
+<p>During system runtime <var>init</var> waits for pending signals. 
+Whenever <code>SIGCHLD</code> is received, a process is reaped;
+if the process just died is to be respawned, init respawns it
+
+<p>If <code>SIGUSR1</code> or <code>SIGUSR2</code> are received, <var>init</var> halts
+or reboots the system (resp.); all processes are
+sent the <code>TERM</code> signal and after a while the <code>KILL</code> signal;
+filesystems are unmounted (first calling "<code>umount -a</code>", then
+using the internal <var>umount</var> command, so all cases are covered);
+and then the system is halted or rebooted. 
+In order to halt or reboot the system from an
+interactive <var>ettclsh</var> session you can invoke the <var>halt</var> or
+<var>reboot</var> procedures, that simply send a signal to <var>init</var>. 
+If you have no console access to see shutdown messages, you can count on shutdown to take 5
+seconds.
+
+
+
+
+htmldesc-end
+htmllist-begin
+
+<li><code>/sbin/init</code> and related files come from
+	<code>ettcl-14/Applications/init</code> .
+
+htmllist-end

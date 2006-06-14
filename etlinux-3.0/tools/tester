@@ -1,0 +1,346 @@
+#
+# Test script for etlinux.
+# Copyright (C) Davide Ciminaghi <ciminaghi@prosa.it> 2003
+# Copyright (C) Prosa S.r.l. <info@prosa.it> 2003
+#
+# Reads all files named test.SOMETHING under $(pwd) and performs 
+# relevant tests
+# 
+# Logs compilation results for each test to file log_SOMETHING
+# under directory $(pwd)/log/
+# Furthermore logs a test summary named result_SOMETHING
+#
+# Run with no args => Minimal log info
+# Run with -v or --verbose => verbose build => max. log info
+
+#
+# Format of test.SOMETHING
+#
+# platforms=<list_of_platforms>
+# configs=<list_of_configs> or packages=<list_of_packages>
+#
+# In case packages are specified, dependencies are calculated
+# according to packages build files.
+
+verbose=0
+
+###########################################
+#                                         #
+# Get options				  #
+#                                         #
+###########################################
+get_options() {
+    while [ "$1" != "" ]; do
+        case $1 in
+                -v*)
+			verbose=1
+                        ;;
+                --verbose*)
+                        verbose=1
+                        ;;
+		*)
+			echo "Unrecognized option" > /dev/stderr
+        esac
+        shift
+    done
+}
+
+###########################################
+#                                         #
+# Check whether user is root and find     #
+# out what program shall be used to       #
+# run commands as root                    #
+#                                         #
+###########################################
+check_root() {
+    echo "########################################"
+    echo "# You need to be root for some         #"
+    echo "# programs to work correctly.          #"
+    echo "# I'm going to check who you are       #"
+    echo "########################################"    
+    if [ "$(whoami)" != "root" ] ; then
+	SUDO=$(which sudo)
+	FAKEROOT=$(which fakeroot)
+	SU=$(which su)
+	i=0
+	echo "Warning. You need to be root to do this"
+	echo "Make a choice [0]"
+	echo "Skip commands which need you to be root (0)"
+	choices[0]=Skip
+	i=$(($i+1))
+	if [ "$SUDO" != "" ] ; then
+	    echo "Run $SUDO ($i)"
+	    choices[$i]=$SUDO
+	    i=$(($i+1))
+	fi
+	if [ "$FAKEROOT" != "" ] ; then
+	    echo "Run $FAKEROOT ($i)"
+	    choices[$i]=$FAKEROOT
+	    i=$(($i+1))
+	fi
+	read REPLY
+	ROOTPRG=${choices[$REPLY]}
+    else
+        echo "OK. You're root. Let's go on"
+    fi
+}
+
+###########################################
+#                                         #
+# Run $1 as root using $ROOTPRG           #
+#                                         #
+###########################################
+run_command_as_root() {
+    case "$ROOTPRG" in 
+	Skip) echo "Command skipped because you're not root" ;;
+	*sudo) echo $ROOTPRG $@ > /dev/null ; $ROOTPRG -c \"$@\" ;; 
+	*su) echo $ROOTPRG -c \"$@\" > /dev/null ; $ROOTPRG -c \"$@\"  ;;
+	*fakeroot) echo $ROOTPRG -- $@ > /dev/null ; $ROOTPRG -- $@  ;;
+	*) echo $ROOTPRG $@ > /dev/null ; $ROOTPRG $@  ;;
+    esac
+}
+
+
+###########################################
+#                                         #
+# Add something to test log      	  #
+#                                         #
+###########################################
+log() {
+    	echo -e $1 | tee -a  $log_file
+    	return 0
+}
+
+log_result() {
+	echo -e $1 | tee -a $result_file
+	return 0
+}
+
+###########################################
+#                                         #
+# Issue a warning and log it              #
+#                                         #
+###########################################
+warning() {
+	echo $1 1>&2
+	log $1
+}
+
+###########################################
+#                                         #
+# Calculate required packages for $1	  #
+#                                         #
+###########################################
+required_packages() {
+	tmpfile=$(tempfile)
+	echo "package = $1" > $tmpfile
+	{ out="$($SOURCEDIR/tools/extractpackages $tmpfile)" && \
+	  echo $out ; } || return 1
+	rm $tmpfile
+	return 0
+}
+
+
+###########################################
+#                                         #
+# Run tests for a platform		  #
+# $1 = list of configs 			  #
+#                                         #
+###########################################
+run_platform_test() {
+	export PLATFORM=$1
+	platformpkgs=$(grep "PLATFORMPKG[ ]*:=[ ]*" $SOURCEDIR/Platforms/$1 \
+	               | sed -e 's/PLATFORMPKG[ ]*:=[ ]*\(.*\)/\1/')
+	configs=$2
+	echo "Running tests for platform $1"
+	echo "Platform packages are $platformpkgs"
+	export PLATFORMPKG=$platformpkgs
+	stat=1
+	if [ "$verbose" = "1" ] ; then 
+		grep_pattern="."
+	else
+		grep_pattern="===="
+	fi
+	if [ "$configs" = "" ] ; then
+		tmpfile=$(tempfile)
+		log "\n==== Compiling packages $packages ....\n"
+		ln -fs $SOURCEDIR/Makefile
+		log_result "Date = $(date)"
+		log_result "Host = $(hostname)"
+		log_result "Platform $1"
+		built_packages=""
+		current_packages=""
+		for pkg in $packages ; do
+			current_packages=$(required_packages $pkg) || \
+			 { echo "***********************************" ; \
+			 echo "* Building package(s) $pkg:  *" ; \
+			 echo "* Dependency not satisfied        *" ; \
+			 echo "**********************************" ; \
+			 log_result "Package $pkg : dependency error" ;  \
+			 log "Package $pkg: dependency error" ; \
+			 continue ; }
+			# Don't build the same package twice
+			for p in $built_packages ; do
+				current_packages=$(echo "$current_packages" | \
+				sed -e "s/$p//g")
+			done
+			# Avoid current_packages containing spaces only
+			current_packages=$(echo $current_packages | \
+					   sed -e 's/$[ ]*^//')
+			if [ "$current_packages" = "" ] ; then 	
+				stat=1
+				continue 
+			fi
+			export PACKAGES="$current_packages"
+			echo "***********************************************"
+			echo "* Building package(s) $PACKAGES *"
+			echo "***********************************************"
+			run_command_as_root make > $tmpfile 2>&1 && \
+				log_result "Package $pkg : success" || \
+				{ log_result "Package $pkg : error" ; stat=0 ;}
+			built_packages="$built_packages $current_packages"
+			# Force verbose mode in case of failed compilation
+			if [ "$stat" = "0" ] ; then 
+				local_verbose=1
+			else
+				local_verbose=$verbose
+			fi
+			if [ "$local_verbose" = "1" ] ; then 
+				grep_pattern="."
+			else
+				grep_pattern="===="
+			fi
+			cat $tmpfile | grep "$grep_pattern" | tee -a $log_file 
+			rm $tmpfile
+			stat=1
+		done
+		rm $configfile
+		return $stat
+	else
+		for cfg in $configs ; do
+			export CONFIG=$cfg
+			tmpfile=$(tempfile)
+			config_dir=$cfg
+			pushd $(pwd) > /dev/null
+			mkdir -p $config_dir && cd $config_dir || exit 1
+			log "\n==== Compiling config $cfg ....\n"
+			ln -fs $SOURCEDIR/Makefile
+			(run_command_as_root make > $tmpfile 2>&1) || stat=0
+			# Force verbose mode in case of failed compilation
+			if [ "$stat" = "0" ] ; then 
+				local_verbose=1
+			else
+				local_verbose=$verbose
+			fi
+			if [ "$local_verbose" = "1" ] ; then 
+				grep_pattern="."
+			else
+				grep_pattern="===="
+			fi
+			run_command_as_root cat $tmpfile | \
+				grep "$grep_pattern" | \
+				tee -a $log_file 
+			rm $tmpfile
+			popd
+		done
+	fi
+	log "run_platform_test: stat=$stat"
+	return $stat
+}
+
+###########################################
+#                                         #
+# Run tests given test file		  #
+# $1 = path of test file		  #
+#                                         #
+###########################################
+run_test() {
+	tst_file=$1
+	tst=$(echo $tst_file | sed -e 's/^.*test\.//')
+	tst_build_dir=$TEST_DIR/$tst
+	pushd $(pwd) > /dev/null
+	mkdir -p  $tst_build_dir || exit 1	
+	log_file=$LOG_DIR/log_$tst
+	result_file=$LOG_DIR/result_$tst
+	log "==========================================="
+	log "Starting test $tst, current time is $(date)"
+	log "==========================================="
+	test_start_time=$(date +%s)
+	source $tst_file
+	if [ "$platforms" = "" ] ; then
+		warning "Missing \"platforms=\" in test config file. \
+			 Defaulting to host-native"
+		platforms="host-native"
+	elif [ "$platforms" = "all" ] ; then 
+		platforms=$(ls $SOURCEDIR/Platforms)
+	fi
+	if [ "$configs" = "" ] && [ "$packages" = "" ] ; then 
+		configs=$(ls $SOURCEDIR/Configs)
+	fi
+	for platform in $platforms ; do
+		platform_dir=$tst_build_dir/$platform
+		pushd $(pwd) > /dev/null
+		mkdir -p $platform_dir && cd $platform_dir
+		if run_platform_test $platform "$configs" ; then 
+			success="failed"
+		else
+			success="succeded"
+		fi
+		popd
+	done
+	test_end_time=$(date +%s)
+	test_time=$(($test_end_time - $test_start_time))
+	test_bogo=$((($test_time * $bogomips)/1000))
+	log "==========================================="
+	log "Test $tst done. Current time is $(date)    "
+	log "Test data:                                 "
+	log "Platforms = $platforms			"
+	log "Configs = $configs				"
+	log "Packages = $packages                       "
+	log "Status = $success				"
+	log "Time = $test_time secs			"
+	log "Cpu bogomips = $bogomips			"
+	log "kbogoMips  seconds = $test_bogo		"
+	log "==========================================="
+	popd
+	
+}
+
+###########################################
+#                                         #
+# Main					  #
+#                                         #
+###########################################
+check_root
+get_options $@
+
+# Calculate cpu bogomips, integer format
+bogomips=$(cat /proc/cpuinfo | grep bogomips | cut -d ' ' -f 2 | \
+sed -e 's/\([0-9]*\)\.[0-9]*/\1/')
+
+if [ "$verbose" = "1" ] ; then 
+	echo "Verbose operation"
+fi
+
+TEST_DIR=${TEST_DIR:-$(pwd)}
+LOG_DIR=$TEST_DIR/log
+
+if [ "$SOURCEDIR" = "" ] ; then
+	echo "******************************" > /dev/stderr
+	echo "* SOURCEDIR is not defined ! *" > /dev/stderr
+	echo "******************************" > /dev/stderr
+	exit 1
+fi
+
+if [ ! -d $TEST_DIR ] ; then 
+	mkdir -p $TEST_DIR || exit 1
+fi
+if [ ! -d $LOG_DIR ] ; then
+	mkdir -p $LOG_DIR || exit 1
+fi
+
+trap  "echo Tests interrupted !!!! ; log \"\nTest interrupted at $(date)\n\" ; exit 1" INT 
+
+for f in $(ls $TEST_DIR/test.*) ; do
+	run_test $f
+done

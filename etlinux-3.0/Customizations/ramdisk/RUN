@@ -1,0 +1,46 @@
+#!/bin/bash
+set -e
+#set -x
+
+# create a ramdisk of the right size (cwd is knwon to be TARGETDIR)
+name=`mktemp /tmp/etlinux-ramdisk.XXXXXX`
+dir=`mktemp /tmp/etlinux-mount.XXXXXX`; rm -f $dir
+if ! mkdir $dir; then
+	echo "Can't make directory $dir" >& 2
+	exit 1
+fi
+
+cleanup () {
+    umount $dir 2> /dev/null || true
+    rm -f $name
+    rmdir $dir || true
+}
+
+trap cleanup EXIT ERR
+
+
+typeset -i size="`du -s . | cut -f1`+1024"
+
+if [ "x$RAMDISK_SIZE" != "x" ]; then
+   if typeset -i envsize=$RAMDISK_SIZE; then
+      size=$envsize
+   else
+      echo "RAMDISK_SIZE not a number (\"$RAMDISK_SIZE\"); using default"
+   fi
+fi
+
+echo "* Creating file for filesystem (size: $size kB)"
+dd bs=1024 count=$size < /dev/zero > $name
+sync
+
+echo "* Running mkfs"
+yes | mke2fs -L "EtLinux root" -q $name; echo ""
+
+echo "* Mounting and filling"
+grep -qsw loop /proc/devices || modprobe loop
+mount -o loop $name $dir
+cp -a . $dir
+umount $dir; sync
+gzip < $name > `dirname $TARGETDIR`/ramdisk.gz
+
+exit

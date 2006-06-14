@@ -1,0 +1,22 @@
+--- modssl-2.8.22/etc/apply.sh.orig	Mon Jul 18 18:36:29 2005
++++ modssl-2.8.22/etc/apply.sh	Mon Jul 18 18:36:49 2005
+@@ -7,7 +7,7 @@
+ #   parameters
+ cookiestr="$1"
+ cookiefile="$2"
+-patchprg="$3"
++patchprg="$3 -p0"
+ patchfile="$4"
+ applydir="$5"
+ prefix="$6"
+--- modssl-2.8.22/configure.orig	Mon Jul 18 18:36:59 2005
++++ modssl-2.8.22/configure	Mon Jul 18 18:37:44 2005
+@@ -71,7 +71,7 @@
+ mm=''
+ crt=''
+ key=''
+-patch=''
++patch="`which patch`"
+ apaci=''
+ configstatus=config.status
+ help=no

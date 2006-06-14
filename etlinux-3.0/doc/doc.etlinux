@@ -1,0 +1,2753 @@
+\input texinfo    @c -*-texinfo-*-
+%
+% doc.etlinux - main file for the documentation
+%
+%%%%
+
+%------------------------------------------------------------------------------
+%
+%                         NOTE FOR THE UNAWARE USER
+%                         =========================
+%
+%    This file is a texinfo source. It isn't the binary file of some strange
+%    editor of mine. If you want ASCII, you should "make etlinuxdoc.txt".
+%
+%------------------------------------------------------------------------------
+
+%
+% This is not a conventional info file...
+% I use two extra features:
+%       - The '%' as a comment marker, if at beg. of line ("\%" -> "%")
+%       - leading blanks are allowed
+%
+
+@comment %**start of header
+@setfilename etlinux.info
+@settitle etlinux @value{etver}
+@iftex
+@afourpaper
+@end iftex
+@comment %**end of header
+
+@ifinfo
+@format
+START-INFO-DIR-ENTRY
+* EtLinux: (etlinux).              The "etlinux" embedded system
+END-INFO-DIR-ENTRY
+@end format
+@end ifinfo
+
+
+@setchapternewpage off
+
+%VERSION 0.01
+@set version $Revision: 1.1 $
+@set update-month August 2002
+
+%PACKAGE VERSION  3.0-devel
+@set etver 3.0-devel
+
+@finalout
+
+@ifinfo
+
+This file is the User's Manual for version @value{etver} of the
+EtLinux embedded system.
+
+@end ifinfo
+
+@setchapternewpage odd
+@titlepage
+@c use the new format for titles
+@title EtLinux-@value{etver} (manual @value{version})
+@subtitle An embeddable Linux system for 386 devices and other tiny computers
+@subtitle($Date: 2006/06/14 07:55:37 $)
+@subtitle @value{update-month}
+
+@author Alessandro Rubini
+@author Prosa S.R.L.
+
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2003 @email{rubini@@linux.it, Alessandro Rubini}
+@email{sama@@gnudd.com, Andrea Glorioso}
+@vskip 2pt
+Copyright @copyright{} 2002 @email{rubini@@linux.it, Alessandro Rubini}
+@vskip 2pt
+Copyright @copyright{} 1998 @email{info@@prosa.it, Prosa S.R.L.}
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU General Public License, Version 2 or
+any later version published by the Free Software Foundation. 
+
+@strong{WARNING}: please note that the GPL has not been included in this
+manual.  You can find it in the file COPYING, in the same directory
+where you found the file that you are reading.
+
+@end titlepage
+
+@setchapternewpage off
+@headings single
+
+
+@c ########################################################################
+@c ########################################################################
+@node Top, Introduction, (dir), (dir)
+@top The EtLinux System
+
+This manual documents version @value{etver} of @dfn{EtLinux}.  With the
+exception of version 1.0 (which has only historical interest nowadays),
+other versions are very similar to what described here, so you can use
+this manual together with software releases that have no associated manual.
+
+@var{EtLinux} is completely Free Software; all components we developed
+are released according to the GNU General Public License, other
+components are only included if they use a Free license.
+For this reason, support for Disk-on-Chip with kernel 2.0
+has been removed; it relied on a proprietary driver, and that
+brought in all the worst problems of proprietary software.
+
+@var{EtLinux} is mainly the user-space suitable for an embedded system, the
+kernel you choose is not directly related to what user space you run,
+with the exception of a few kernel-related packages like @var{modutils}.
+
+Still, we have a section about kernel selection and compilation.
+@xref{Kernels}.
+
+@menu
+* Introduction::                
+* EtTcl::                       
+* Building the target tree::    
+* ICE (Interactive Compilation Ehlper)::  
+* EtLinux packages::            
+* Installing to the target system::  
+* Platform-specific::           
+* Kernels::                     
+* A new competitor in the embedded systems arena::  
+@end menu
+
+
+@c ########################################################################
+@node    Introduction, EtTcl, Top, Top
+@chapter Introduction
+
+@heading What is EtLinux?
+
+@var{EtLinux} is a complete Linux-based system designed to run on very small
+industrial computers. It has been designed to be small, modular,
+flexible and complete. Its reduced memory and disk requirements make
+it ideal for all cost-sensitive situations, while at the same time its
+modularity and completeness give the full power of Unix even for
+embedded applications.
+
+@heading What is EtLinux useful for?
+
+@var{EtLinux} is ideal in all embedded system applications where advanced
+Unix facilities are a must: preemptive multitasking, multi-threading
+(if you use @var{libpthreads}),
+memory protection, fast I/O, enhanced reliability, speed, ...
+Moreover, source code availability is a guarantee for the longevity of
+@var{EtLinux} based products. But perhaps the greatest advantage over
+competitors is given by the enormous and proven availability of
+advanced development tools, documentation and sources, giving an
+effective edge to the developer and reducing the time to market. In
+fact the availability of constantly updated quality C/C++ compilers,
+debuggers, libraries, interpreted languages, and other tools is the
+most compelling reason to switch away from old proprietary embedded
+development environments.
+
+@heading EtLinux specific features
+
+@var{EtLinux} has some unique features, that distinguish it from other
+linux-based embedded solutions:
+
+@itemize @bullet
+@item
+	Embedded cgi-capable WEB server
+
+@item
+	Telnet server
+
+@item
+	Email server, with the ability to execute commands sent by
+	email from a remote site
+
+@item
+	CORBA support (currently only in version 1.2 of the system)
+
+@item
+	Easy-to-use remote file management
+
+@item
+	The powerful Tcl scripting language
+
+@item
+	A flexible package selection scheme, allowing an easy
+        customization of the system
+
+@item
+	Source code available for every component and compilation
+        of the whole system from source
+
+@end itemize
+
+@heading System Requirements
+
+Minimal requirements for an @var{EtLinux} system are amazingly reduced:
+
+@itemize @bullet
+@item
+	Intel-compatible 386SX processor (or better); StrongARM or
+        other ARM processor with MMU; PowerPC processor; possibly
+        other platforms work as well (but we didn't test them and do
+        not currently support them).
+
+@item
+	2MB of RAM if you use x86 and libc5.
+
+@item
+        4MB  of RAM if using glibc (on any CPU)
+
+@item
+        More memory if you add packages to what @var{Etlinux-minimum} uses, but
+        your mileage may vary.
+
+@item
+	2MB of disk for x86 and libc5,
+        3M or more for glibc-based or non-minimal
+        setups. You can use HD or Flash or RAM-disk or whatever is supported
+        by the kernel you choose.
+
+@end itemize
+
+
+@c ########################################################################
+@node    EtTcl, Building the target tree, Introduction, Top
+@chapter EtTcl
+
+The core of @var{EtLinux} is the @dfn{EtTcl} interpreter.
+
+@var{EtTcl} is a @var{Tcl} interpreter with some additional commands to
+make it into a system programming language.  All the new features of
+@var{EtTcl} are described in the associated documentation, available
+within the source of the package. @var{EtTcl} sources can be found in
+@url{ftp://ftp.etlinux.org/pub/ettcl},
+@url{ftp://ftp.linux.it/pub/People/rubini/ettcl} and other places .  The
+@var{Tcl} language is documented within its own source distribution.
+@c damn! they only have sourceforge and crap on www for 8.x . No url here
+
+@var{Tcl} has many desirable characteristics for an embedded system. It is
+lightweight, has a very simple syntax and it is possible to add new
+commands in C with little effort. And it is usable in an interactive
+manner, thus acting as a command line interface. We chose to base
+@var{EtTcl} on version 7.6 of the language because it is significantly
+smaller than later versions; we might want to port to version 8.x
+in the future, though.
+
+The most interesting features that @var{EtTcl} adds to the @var{Tcl}
+language are system calls for process management (@var{sys_fork},
+@var{sys_dup}, @var{sys_pipe}, @var{sys_wait}), basic system management
+(@var{mount}, @var{umount}, @var{ifconfig}, @var{route}), UDP
+networking, ability to open a tty pair.  This allows to build a system
+based on a single executable file without the need to resort to external
+executables nor to the @var{exec} system call.  Using @var{fork} without
+the need to @var{exec} a binary image gives noticeable memory savings
+(as opposed to the approach of @var{busybox}, which we still include
+as an add-on package because it implements more Unix commands than
+we do internally.
+
+@c ########################################################################
+@node    Building the target tree, ICE (Interactive Compilation Ehlper), EtTcl, Top
+@chapter Building the target tree
+
+This chapter describes how to build your target @var{EtLinux} tree,
+outlining the role of the different files and the Makefile rules,
+but without dealing with kernel setup nor with uploading to the
+target system.
+
+This a quick start about compiling @var{EtLinux}:
+
+@itemize @bullet
+
+@item
+	You can build @var{EtLinux} either within it's source tree or
+        elsewhere (in an empty directory). In the latter case you
+        need to set @code{SOURCEDIR} in your environment and you need
+        a local copy of (or a symbolic link to) the @var{EtLinux} main
+        @file{Makefile}.
+
+@item
+	Compilation happens by running @var{make} after choosing your
+        platform, your configuration, your customizations. For example
+        ``@code{make PLATFORM=host-native CONFIG=Etlinux-minimum 
+        CUSTOM=""}''.  All three variables can be set either on the
+        command line or in your environment.
+
+@item
+	After running @var{make} (possibly by means if a GUI), the
+        target tree will be in @file{Trees/}@var{your-config}, where
+        @var{your-config} is the name of the configuration file
+        being used.
+
+@item
+	After compilation, you'll also find an @var{html} file within
+        @file{Trees}, with the same base name as your tree.
+@end itemize
+
+
+
+@menu
+* Directory Structure::         
+* Platforms::                   
+* Configurations::              
+* Customizations::              
+* Makefile Rules::              
+* Example Runs::                
+* Troubleshooting::             
+@end menu
+
+@c ==========================================================================
+@node   Directory Structure, Platforms, Building the target tree, Building the target tree
+@section Directory Structure
+
+The @var{EtLinux} distribution tree is almost flat. Older releases
+didn't use subdirectories at all, and their number and structure is
+still limited.
+
+The target tree is created by means of the main @file{Makefile}, that
+sometimes includes material from the @file{tools} subdirectory (such
+scripts are meant to keep the @file{Makefile} simpler and more readable).
+
+You can compile either in the source tree or in another directory,
+currently the preferred approach. In order to compile in your own
+build directory, you'll need to ensure the distribution tree doesn't
+include any object file (i.e., if you compiled there, you must
+@var{make clean} there first). Then you need to copy over, or
+make symlink to, the @file{Makefile} in the @var{EtLinux} top
+directory, as well as set @code{SOURCEDIR} in your environment.
+
+For example:
+@example
+   mkdir $HOME/etlinux-build
+   cd $HOME/etlinux-build
+   export SOURCEDIR=/usr/src/etlinux-3.0
+   ln -s $SOURCEDIR/Makefile .
+@end example
+
+Back to the distribution, each @dfn{package} of @var{EtLinux}
+is made up of several files in the main source
+directory, all with the same base name.  The main file for
+each package has a name ending in ``@file{.build}'', it directs
+compilation and installation; it also provides @var{html} for the
+generated documentation file.
+
+The file whose name eds
+in @var{.tar.gz} file is the pristine source, as found upstream. Note
+that some packages have no ``own'' source and use source code from
+a different package instead, as defined in their build file. This applies
+for example to all the main @var{Ettcl} applications.
+
+The files ending in ``@code{.patch}*'', if any, are patches
+needed to compile the package under @var{EtLinux}. Most of the time
+the patch file is only one and it
+simply removes the default definition for the @code{CC}
+variable in @file{Makefile}, to allow building for a different platform
+than the one supported by the default compiler.
+
+A target tree is built for a specific @dfn{platform}, according to a
+@dfn{configuration} file and one or more @dfn{customization} options. The
+@var{platform} defines what compilers and system libraries to use, the
+@var{configuration} is a choice of packets to include in the target
+tree, the @var{customization} is post-processing that allows to
+add/remove/change anything in the target tree just built.
+
+@strong{Please note:} Older versions of @var{EtLinux} (including version
+1.2) miss platform and custom support; they only had configuration files
+for choosing the packets, and they were called ``build files''.
+
+In order to choose the platform/configuration/customization to use, you
+can specify them in your environment, or on the command-line of
+@var{make}.  These variables are used to direct compilation.
+
+@table @code
+@item PLATFORM
+	The target platform. Supported platforms live in the @file{Platforms}
+        subdirectory; each platform file is a @file{makefile}, included
+        by the main @file{Makefile}. If no @code{PLATFORM} is specified
+        in the environment or in the command line, the default
+        @file{Platforms/default} is used. If the specified platform file
+        doesn't exists, an error is generated. If the platform file exists
+        but is not properly written, the result is unpredictable.
+        The role of a platform file is defining @var{make} variables.
+        See @ref{Writing Your Platform File} for details on the content
+        of this file.
+
+@item CONFIG
+	The current configuration being used. This name will be
+        used as name of the output tree. The file @file{Configs/$(CONFIG)}
+        will be used to extract the list of packages to compile.  The
+        file @file{Configs/$(CONFIG).mk}, if it exists, will be included
+        by @var{make}. This allows specifying a customization set
+        associated to each configuration (called @code{CFG_CUSTOM}).
+
+@item BUILD
+	This variable is used in place of @code{CONFIG} if defined
+        (and if @code{CONFIG} is not defined). This is to preserve
+        command-line compatibility with previous versions of @var{EtLinux}.
+
+@item PACKAGES
+	The list of packages can be passed directly to @var{make}. This
+        is used, for example, by @var{ICE} (@pxref{ICE (Interactive
+        Compilation Ehlper)}), but it's not
+        a wise choice for interactive use. If @code{PACKAGES} is defined,
+        the configuration file is not used.
+
+@item CUSTOM
+	The variable is a list of customizations to apply to this
+        build. Items are separated by white space. Each customization
+        allows to add or remove or change the output tree. Using
+        several customizations at once allows to combine different
+        add-ons without the need to replicate items. A customization
+        can also be used to do generic post-processing, like creating
+        a ROMFS image out of the compiled @var{EtLinux} tree.
+
+@end table
+
+@
+@
+
+The following list summarizes how the various items are selected:
+
+@itemize @bullet
+
+@item
+	The platform is selected using the @code{PLATFORM}
+        environment variable or the command line of @var{make}.
+
+@item
+	The list of packages is selected by choosing a configuration
+        file (in @file{Configs}), but the chosen platform can
+        predefine one or more packages. You can override the complete
+        list of packages (including the ones selected by the platform)
+        by setting @code{PACKAGES}.
+
+@item
+	The list of customizations is selected using @code{CUSTOM},
+        but the configuration can preselect some of them using
+        the @code{Configs/}@var{name}@code{.mk} file.  Currently there
+        is no support to specify customizations directly in the configuration
+        file.
+
+@end itemize
+
+@c ==========================================================================
+@node   Platforms, Configurations, Directory Structure, Building the target tree
+@section Platforms
+
+The distribution includes configuration files for a few platforms,
+some of them are completely functional and tested, some need more work.
+This section details what the supported platforms are and what's in
+a platform file so you can write your own.
+
+@menu
+* Supported Platforms::         
+* Writing Your Platform File::  
+@end menu
+
+@c --------------------------------------------------------------------------
+@node Supported Platforms, Writing Your Platform File, Platforms, Platforms
+@subsection Supported platforms
+
+The current release of @var{EtLinux} includes the following platforms.
+Details on specific issues related to each platform (for example what
+packages you can't use with a platform) are delayed to
+@ref{Platform-specific}.
+
+@table @strong
+
+@item default
+	The @var{default} platform is used if you don't make your choice.
+        The distributed version just redefines @code{PLATFORM} to be
+        @var{i386-native-libc5}. The @file{Makefile} reads the
+        platform file twice in order to allow this kind of redirection.
+        You can change the @var{default} platform to point somewhere else
+        in your copy of the source tree.
+
+@item i386-native-libc5
+	This platform sets @code{CC} to
+        @code{i486-linuxlibc1-gcc} in order to compile with libc5,
+        only available for the x86 platform. If you want to
+        use the compiler definition from the environment, instead,
+        create your own platform file (@pxref{Writing Your Platform File}.
+        The platform preselects the @var{libc5} package to be used in
+        building the target tree.
+        Please note that using @code{i486-linuxlibc1-gcc}
+        will probably only work on Debian GNU/Linux.
+
+@item host-native
+	The ``@code{host-native}'' platform builds a target tree using
+        the default tool chain and preselects a package
+        that copies over library files from the host to the target
+        tree. This has the effect of building a glibc-based target
+        using the same library version you are currently running on
+        the host. Please note that the package being used (@var{host-glibc})
+        assumes the host is running @var{glibc} 2.x, if your native
+        @var{libc} is different you'll have to fix some details here and there.
+        This platform has been tested on @var{i386}, @var{arm} and
+        @var{ppc}.
+
+@item arm-cross-hhl
+	The platform is used to build an ARM target tree using the
+        cross-compiler part of the Hard Hat Linux distribution, and
+        copying library files over from the Hard Hat target tree.
+
+@item i386-native-uclibc
+	This platform is not completely tested and supported as of
+	this version of @var{EtLinux}. It will be supported in 2.0.
+	The file defines @code{CROSS_COMPILE}, since the @var{uclibc}
+        environment is distributed with a complete tool chain to
+        compile and link with @var{uclibc} (as opposed to just the compiler).
+        The cross-compile chain is included in the ``@var{Woody}''
+        release of Debian GNU/Linux but it's probably missing from
+        other distributions.
+
+@end table
+
+
+@c --------------------------------------------------------------------------
+@node Writing Your Platform File,  , Supported Platforms, Platforms
+@subsection Writing Your Own Platform
+
+The platform file is included by @var{make}, and it's role is defining
+@var{make} variables.  The safe operator for such assignments is
+``@code{:=}'', instead of a plain ``@code{=}'', the difference
+being explained in the @var{make} documentation. If in doubt, please
+use ``@code{:=}''.
+
+But please remember that adding a new computer platforms to
+@var{EtLinux} doesn't reduce to writing a platform file.  You'll
+usually need to patch the source packages or replace them with different
+versions (and test these version with the other platforms if you want to
+keep them working).
+
+These are the variables typically set by a platform file; they
+are exported to all other @var{make} processed being invoked while
+compiling the @var{EtLinux} tree.
+
+@table @code
+
+@item CC
+	The variable is used by @var{make} to select what compiler
+        to use by default. You should set it if oyu need a specific
+        version of the compiler and the default binary utils
+        (linker, @var{strip}, and so on).
+        See @file{Platforms/i386-native-libc5} for an example.
+
+@item CROSS_COMPILE
+	The variable is used in alternative to @code{CC} if you want
+        to run a completely separate tool-chain. This is usually what
+        you need when cross-compiling.
+        See @file{Platforms/arm-cross-hhl} for an example.
+
+@item ARCH
+	The target computer architecture. For example @var{arm},
+	@var{i386}, @var{ppc}. The variable is not currently used
+        but will probably be needed in compiling other packages.
+
+@item TARGETSYSTEM
+	The tuple that describes the target platform, for example
+        @var{arm-generic-linux}. This string is passed to @file{./configure}
+        while compiling some of the included packages. Using
+        ``@code{$(ARCH)-generic-linux}'' is most likely a good bet.
+        See @file{Platforms/host-native} for an example.
+
+@item PLATFORMPKG
+	If your platform preselects one or more @var{EtLinux} packages
+        (most likely the right @var{libc} to use), you can list them
+        in this variable, separated by blanks.
+        See @file{Platforms/host-native} for an example.
+
+@end table
+
+Additionally, if you want to run specific tests to verify the
+platform is usable on the current host computer, you can add
+an executable file called ``@code{tools/checkplatform-}@var{platform}''.
+This is used, for example, with @var{i386-native-libc5} to verify
+that the chosen compiler works, so trivial errors like forgetting
+to install the compiler are easily detected.
+
+@c ==========================================================================
+@node   Configurations, Customizations, Platforms, Building the target tree
+@section Configurations
+
+The ``configuration'' files (whose default is @file{Configurations/Etlinux})
+are meant to list the packages that you want to include.
+
+Empty lines and lines that begin with an hash mark are ignored as
+comments; a line that states ``@code{provides: etlinux}'' should
+be present, although it is mainly an historical relic with no real
+role any more.
+
+Lines of the form ``@code{package = }@var{name}'' are used to select a
+package; all other lines are currently unused but we might
+extend the format in the future.
+
+A ``package'', for our distribution, is identified by a @code{.build}
+file. Package names can be one of the following:
+
+@itemize @bullet
+@item
+The complete name of a package that exists in the following directory,
+including the version number. If a file ``@var{name}@code{.build}''
+exists in the current directory, then this is selected as the requested
+package.
+
+@item
+The base name of a package. If ``@var{name}@code{.build}'' doesn't
+exist, all @code{.build} files are considered, provided they
+begin with @var{name} and the name is followed by either a digit
+or a dash and a digit. Of these files, the one with the greatest
+version number is taken.  Therefore, @code{foo} can be used
+to select @code{foo-1.23.build} and @code{bar} cab be used
+to choose @code{bar12.build}.
+
+@item
+A virtual package name. If no matching @var{.build} file is found,
+then @code{provides:} directives are searched in all build files.
+
+@end itemize
+
+Using a virtual package, allows easy handling of dependencies and conflicts.
+
+@strong{Warning:} virtual packages are not yet implemented at this
+specific place.
+
+A configuration file can be accompanied by its own makefile, useful
+for example to specify what customizations to use.  The default
+file is @file{Configs/Etlinux.mk}, and it is empty.
+
+The current distribution includes the following configuration files
+
+@table @strong
+
+@item Etlinux
+	This is the default configuration file. It selects by default
+        a setup that can run in 2MB when compiled for @var{libc5} on
+        the x86 platform.
+
+@item Etlinux-minimum
+	A stripped down configuration, with only the @var{Ettcl} interpreter
+        and its internal applications, plus a tiny external @var{df} command.
+
+@item Etlinux-4MB
+	The file includes @var{bash} and other utilities, as well as
+        a standard @var{telnet} service and @var{getty} for a few text
+        terminals on the Linux console. It runs in 4MB of RAM if compiled
+        for @var{libc5} on the x86.
+
+@item assabet
+	The file includes the card manager, gdbserver, busybox and other 
+        standard packages. This configuration uses arm-hhl-glibc and 
+        is designed to run on an assabet board.
+
+@item tmpfs
+	The file includes just what is needed to create a tmpfs, fill it
+        with the contents of a tar gzipped file containing the final 
+        root file system and re-root the system under tmpfs
+
+@end table
+
+@c ==========================================================================
+@node   Customizations, Makefile Rules, Configurations, Building the target tree
+@section Customizations
+
+Customizations are meant to allow post-compilation processing of the
+target tree. You are encouraged to create your own customizations
+to add any feature you need that is not supported by the core distribution.
+
+For example, you'll most likely want to write your @var{application}
+tree in order to add your own files to the target tree, as well
+as a @var{kernelmodules} customization to add the modules you need.
+
+This section details what the supported customizations are and what's in
+a customization directory file so you can write your own.
+
+@menu
+* Supported Customizations::    
+* Writing Your Own Customization::  
+@end menu
+
+@c --------------------------------------------------------------------------
+@node Supported Customizations, Writing Your Own Customization, Customizations, Customizations
+@subsection Supported Customizations
+
+The current distribution (the one where this manual lives) includes
+the following customizations:
+
+@table @strong
+
+@item ldconfig
+	The customization is used to run @var{ldconfig} in the target
+        tree. The program creates @file{/etc/ld.so.cache} to speed up
+        loading of shared executables (although it makes no difference
+        when you just use the standard libraries, so you may want to avoid it)
+        This step can only be performed if you are not cross-compiling and
+        if an @file{/sbin/ldconfig} file is included in the target tree.
+        If the customization can't run, it spits a message but generates
+        no error.
+
+@item depmod
+	The customization is used to run @var{depmod} in the target
+        tree, for every set of kernel modules found. You should run
+        it after the step that adds your own modules to the target
+        tree. This step can only be performed if you are not cross-compiling;
+        it uses either the @file{/sbin/depmod} in the target tree, if any, or
+        the one in the host tree.  If you cross-compile, you'll
+        need to perform depmod at boot time (for example by adding
+        @file{/etc/applications/depmod} so @var{init} will run it
+        automatically). You can avoid running @var{depmod} if you either
+        have no modules at runtime or if you load them using @var{insmod}
+        without automatic dependency resolution.
+
+@item ramdisk
+	The customization creates a compressed ram-disk in the
+        @file{Trees} directory. The file is called ``@code{ramdisk.gz}''
+        independent of the name of the target tree. The size of
+        the ramdisk is chosen to be 1MB more than the size of the tree,
+        unless @code{RAMDISK_SIZE} is set in the environment. The value
+        of @code{RAMDISK_SIZE} must be an integer number and is used as
+        number of kilobytes. You may want to change the script,
+        or create your own customization based on this one.
+
+        Please note that if @file{/etc/mtab} is a symlink to
+        @file{/proc/mtab}, a loop device will be consumed during creation
+        of the ramdisk. Please look at the man page for @var{mount} for
+        details; unfortunately Debian woody has the symlink by default,
+        so you may want to fix it by hand.
+
+@item stripall
+	The customization strips all ELF files found in the target tree.
+        You'll probably want to run it after adding all of your
+        custom files (but before building the ramdisk). Or you'd just
+        better not run it. Please note that most packages already strip
+        their binaries as part of the install step.
+
+@item assabet
+	The customization adds a precompiled @file{ld.so.cache} (as it's
+        needed by glibc-2.1, as used in the hard-hat tools included in the
+        Assabet offering by Intel) and configures the system for the
+        CF Ethernet card included in the offering.  Your own setup will
+        need very simple editing to this customization.
+
+@item tmpfs
+        This customization helps using tmpfs as a final root file system 
+        for the target. To run it, you must first define an environment 
+        variable called @var{TMPFS_TREE} which shall contain the 
+        location of a target tree previously built some other way 
+        (for example using one of the Etlinux configurations). Such location
+        shall be relative to @file{<build_directory_path>/Trees/}.
+
+        Next you must build an Etlinux tree with @var{CONFIG=tmpfs} and 
+        @var{CUSTOM=tmpfs}. This will produce a new tree containing 
+        a special init (see below) and the tarball corresponding to 
+        the first tree you built.
+
+	Here's an example (assuming that etlinux sources are in 
+        @file{/opt/etlinux/etlinux-3.0}, while the build dir is
+        @file{/opt/etlinux/etlinux-build} :
+
+        @example
+        cd /opt/etlinux/etlinux-build
+        export SOURCEDIR=/opt/etlinux/etlinux-3.0
+        export PLATFORM=host-native
+        export CONFIG=Etlinux-minimum
+        export CUSTOM=
+        sudo make 
+        @end example
+
+        At this time, you should have an Etlinux-minimum tree under Trees
+        in the build directory.
+        Now, build a tmpfs configuration together with a tmpfs customization:
+
+        @example
+        export TMPFS_TREE=Etlinux-minimum
+        export CONFIG=tmpfs
+        export CUSTOM=tmpfs
+        sudo make 
+        @end example
+
+        At the end of the compilation process, you should have a tmpfs 
+        tree under Trees/tmpfs:
+
+        @example
+        /opt/etlinux/etlinux-build/Trees/tmpfs$ ls
+        bin   dev  html  local  proc  tmp          usr
+        boot  etc  lib   mnt    sbin  tree.tar.gz  var
+        @end example
+        
+        Now you can boot a machine using the tmpfs tree as a root file 
+        system and passing @var{TARFILE=tree.tar.gz} on the kernel 
+        command line.
+        The following steps will take place at boot:
+        
+        @itemize @bullet
+
+        @item   
+        The first root filesystem automatically mounted by the kernel
+        will correspond to the tree shown above. There's no particular 
+        constraint on where to put the tree: it could be reached via nfs
+        or live on a local storage device, for example. If the @var{TARFILE}
+        environment variable isn't found or if @var{$TARFILE} is not a readable
+        file, then an interactive @var{ettclsh} session is started.
+
+        @item
+        The first instance of the @var{init} process mounts a @var{tmpfs}
+        under /mnt and decompresses the @var{$TARFILE} file into it. Moreover, 
+        if a @file{/custom} directory is found, the files stored in it 
+        are copied into the  @var{tmpfs} file system. For instance:
+
+        @example
+        /custom/etc/applications/myappscript
+        /custom/bin/myapp
+        /custom/etc/myapp.conf
+        @end example
+
+        are copied to:
+
+        @example
+        /mnt/etc/applications/myappscript
+        /mnt/bin/myapp
+        /mnt/etc/myapp.conf
+        @end example
+
+        @item
+        This first @var{init} then uses the @var{pivot_root} system call 
+        to switch over the root filesystem and get rid of the initial one.
+
+        @item
+        The new @var{init} is the real one, and takes care of bringing up
+        the whole system.
+
+        @end itemize
+
+@item netconfig
+        This customization is an example showing how to configure the
+        network of the target machine during the bulding process.
+        To this aim you need to create the usual @file{/etc/resolv.conf} and
+        @file{/etc/network.options} of the target machine in the @file{ADD} 
+        subdir of the customization.
+
+        The example include the following file:
+        @example
+        Customizations/netconfig/ADD/etc/network.options
+        Customizations/netconfig/ADD/etc/resolv.conf
+        @end example
+
+        As will be shown in the next section these files will be copied 
+        in the @file{/etc} directory of the target tree by the 
+        bulding tools:
+
+        @example
+        Customizations/netconfig/ADD/etc/network.options
+        Customizations/netconfig/ADD/etc/resolv.conf
+        @end example
+
+        are copied to:
+        
+        @example
+        /etc/network.options
+        /etc/resolv.conf
+        @end example
+
+        in the target tree.
+
+@end table
+
+@c --------------------------------------------------------------------------
+@node Writing Your Own Customization,  , Supported Customizations, Customizations
+@subsection Writing Your Own Customization
+
+Each customization exists as a directory inside @file{Customizations}
+in the source tree for @var{EtLinux}.  The program @file{tools/runcustom}
+takes care of running all the chosen customizations.
+ 
+The following files and directories are used directly by @var{runcustom}
+and they are all optional.
+
+@table @var
+
+@item ADD
+	This is a subdirectory. Its content is copied verbatim over
+        the target tree, overwriting any file with the same name. This
+        is the preferred way to add pre-compiled packages or your own
+        application to the tree. You can also use an @var{ADD} tree to
+        replace the default configuration files in the target tree.
+
+@item DEL
+	This is a file. It lists every file that ought to be deleted
+        from the target tree, one name per line. Every file name
+        appearing here will be concatenated to the directory name
+        of the target tree, so you won't risk deleting system files,
+        @strong{unless} you use `@code{../}'' in the list. Please be
+        very careful about the content of this file.
+        
+@item RUN
+	This is an executable file, and it is run by make from
+        the root directory of the target tree (for example, @var{ramdisk}
+        relies on this to make a ramdisk of the current directory).
+        If you need to refer to your own customization directory you
+        can access the @code{CUSTOMIZATION} environment variable. Moreover,
+        you'll have access to all the variables defined by @var{make},
+        like @code{PLATFORM}, @code{CONFIG}, @code{PACKAGES} and so on.
+     
+@item DOC
+	The @var{DOC} file is a quick description of what the customization
+        does. It is used by the @var{ICE} graphical interface in the
+        customization-selection panel. 
+
+@end table
+
+The program @var{runcustom} first adds files, then removes file, and
+finally runs your custom program.  You can place other files or
+subdirectories in your customization, and access them from your
+@var{RUN} command using the @code{CUSTOMIZATION} environment variable.
+
+Please don't get frustrated by looking how complex the provided @var{RUN}
+files are; they must take care of a lot of errors since distributed
+files may be used in several different environments.  Writing a @var{RUN}
+file meant to run on your specific host can avoid all error-checking and
+make assumptions about what is and is not available.
+
+
+@c ==========================================================================
+@node    Makefile Rules, Example Runs, Customizations, Building the target tree
+@section Makefile Rules
+
+A package can exists either as a source tar-ball, as an uncompressed and
+built source directory, or as a binary image ready to install to the
+target tree. Whenever the pre-installed binary directory exists,
+it is used to install the package to the target tree.
+
+The following rules in @var{Makefile} can be used to act
+on the packages. Every invocation of @var{make} can specify
+the platform, the configuration, the customization list
+on the command line.
+
+Note that currently (July 18th 2002), not all target have been tested
+when compiling in an own directory (i.e., after setting @code{SOURCEDIR}
+in your environment).
+
+The provided @file{Makefile} rules to issue the following commands.
+
+@table @code
+@item make
+	This compiles every package (unless they are already compiled)
+        according to the current platform configuration and customization
+        list. The target tree is then build in a subdirectory of
+        @file{Trees}, using the same name as the configuration chosen.
+
+@item make <package>
+	The rule extracts source code for the package and applies the
+        patch, if any. You might want to perform this step individually
+        in order to look at patched source to help diagnose any problem.
+        For example, ``@code{make sh-utils-1.12}''.
+
+@item make <package>.bin
+	The rule extracts and patches the source, if needed;
+        it then compiles the package and pre-installs to the
+        directory passed as argument. For example,
+        ``@code{make elvis-tiny-1.4.bin}''.
+
+@item make terse
+	The rule removes the package directories, leaving any
+        @code{.bin} alone. This allows freeing disk space
+        whenever you are happy with the pre-installed binary file.
+        This is especially useful for @var{libc}, given its
+        size and the long times it takes to compile it.
+
+@item make clean
+	The rule removes the @code{.bin} directories too,
+        unless there is no associated source.
+
+@item make nosource
+	The rule removes the source code for every package whose
+        @code{.bin} directory exists. Thus, you can get
+        rid of @var{libc} source code if you are happy
+        with the pre-installed one and want to use @code{make clean}
+        to rebuild other packages.  Removing the source for every
+        package you don't care about any more, you can
+        easily concentrate on your application and save a lot
+        of compilation time.
+
+@end table
+
+If you want to run a command (like @code{make clean} or @code{make
+nosource}) on a specific set of packages, you can specify them in the
+@code{PACKAGES} variables; by default the list of packages is extracted
+by the configuration file.  Please note that @code{PACKAGES}, if
+specified, must include version numbers.
+
+@example
+  make nosource PACKAGES="ettcl-13 libc-5.4.46"
+@end example
+
+
+@c ==========================================================================
+@node    Example Runs, Troubleshooting, Makefile Rules, Building the target tree
+@section Example Runs
+
+This is a sample compilation run of the compilation procedure,
+using @var{host-native} on a @var{PowerPC} computer:
+
+@example
+   povero% sudo make PLATFORM=host-native \ 
+                     CONFIG=Etlinux-minimum \
+                     CUSTOM=ldconfig
+   Creating html file
+@i{[...]}
+   ========= Beginning build process
+   make do.build
+   make[1]: Entering directory `/opt/etlinux-1.1-devel'
+   make[2]: Entering directory `/opt/etlinux-1.1-devel'
+   ==== Extracting package _base from sources
+@i{[...]}
+   ==== Extracting package ettcl-13 from sources
+@i{[...]}
+   creating ./config.status
+   creating ettclConfig.sh
+   make[2]: Entering directory `/opt/etlinux-1.1-devel/ettcl-13'
+@i{[...]}
+   ==== Extracting package modutils-2.3.11 from sources
+       ==== Patching modutils-2.3.11 with ./modutils-2.3.11.patch
+   patching file include/elf_i386.h
+@i{[...]}
+   ========= Installing into /opt/etlinux-1.1-devel/Trees/Etlinux-minimum
+   ------ Installing _base
+   3 blocks
+   ------ Installing host-glibc
+   ------ Installing ettcl-init
+   16 blocks
+   ------ Installing df-0.0.1
+   ------ Installing ettcl-telnetd
+   ------ Installing ettcl-httpd
+   ------ Installing ettcl-cmdd
+   ------ Installing modutils-2.3.11
+   ------ Installing ettcl-13
+   ==== Running customizations
+       ---- ldconfig
+           ---- running custom commands...
+   make[1]: Leaving directory `/opt/etlinux-1.1-devel'
+@end example
+@noindent
+the previous compilation  takes 65 kbogoMips-second and prints more than
+350 lines.
+
+@
+@
+
+The following is the (partial) log of a cross-compilation for ARM
+processors, including the final generation of a ramdisk image suitable
+for @var{tftp} booting. Note that specifying @var{depmod} as
+a customization has no effect when cross-compiling.
+
+@example
+   ostro$ export PLATFORM=arm-cross-hhl
+   ostro$ export CONFIG=Etlinux-minimum
+   ostro$ export CUSTOM="depmod ramdisk"
+   ostro$ sudo make
+   Creating html file
+@i{[...]}
+   ==== Extracting package ettcl-13 from sources
+@i{[...]}
+   make do.install
+   make[1]: Entering directory `/home/rubini/etlinux-1.1'
+   ========= Installing into /home/rubini/etlinux-1.1/Trees/Etlinux-minimum
+   ------ Installing _base
+   3 blocks
+   ------ Installing arm-hhl-glibc
+   cp: cannot stat `nsswitch.con': No such file or directory
+   ------ Installing ettcl-init
+   16 blocks
+   ------ Installing df-0.0.1
+   ------ Installing ettcl-telnetd
+   ------ Installing ettcl-httpd
+   ------ Installing ettcl-cmdd
+   ------ Installing modutils-2.3.11
+   ------ Installing ettcl-13
+   ==== Running customizations
+       ---- depmod
+           ---- running custom commands...
+   No modules
+       ---- ramdisk
+           ---- running custom commands...
+   * Creating file for filesystem
+   3126+0 records in
+   3126+0 records out
+   * Running mkfs
+   mke2fs 1.27 (8-Mar-2002)
+   /tmp/etlinux-ramdisk.w3lQsb is not a block special device.
+   Proceed anyway? (y,n) 
+   * Mounting and filling
+   make[1]: Leaving directory `/home/rubini/etlinux-1.1'
+@end example
+
+
+@c ==========================================================================
+@node    Troubleshooting,  , Example Runs, Building the target tree
+@section Troubleshooting
+
+This section collects typical problems encountered in compiling @var{EtLinux}
+and how to solve them.
+
+@table @strong
+
+@item Compilation fails with "Permission Denied"
+	@var{EtLinux} must be compiled by the superuser, or under
+        a @var{fakeroot} jail, since it must untar and copy over device files
+        (in addition to regular files), an activity reserved to the superuser.
+        You should either run ``@code{fakeroot sh}'' and do everything
+        using that shell or use @var{sudo} in front of each invocation
+        of @var{make}. @var{ICE} uses @var{sudo} whenever if believes
+        not to be root. If you prefer @var{fakeroot}, just invoke
+        ``@code{fakeroot ICE}'', so @var{ICE} won't use @var{sudo}
+        internally as it will believe to be running with superuser privileges.
+        For details on @var{sudo} and @var{fakeroot} please refer to their
+        own manual pages.
+
+@item I use fakeroot, and I still have some "Permission Denied" or "Operation Not Permitted" 
+	The former happens if you first compiled using @var{sudo} or
+        as a real @var{root} user, and then
+        switched to @var{fakeroot}. Please remove or @var{chown}
+        all files owned by the superuser before switching to @var{fakeroot}.
+
+        This latter error happens when your setup involves running
+        @var{chroot} or mounting a filesystem (as done by the @var{ramdisk}
+        customization).  These operations cannot be simulated by @var{fakeroot}
+        so you'll need to use @var{sudo} to have full superuser privileges.
+
+@item I wrote my own configuration, but the RUN file doesn't get executed
+	Make sure the RUN file is an executable file (do chmod +x RUN 
+        in case it is not).
+
+@end table
+
+
+@c ########################################################################
+@node ICE (Interactive Compilation Ehlper), EtLinux packages, Building the target tree, Top
+@chapter ICE (Interactive Compilation Ehlper)
+
+@dfn{ICE} is a graphic front-end to direct compilation of an @var{EtLinux}
+tree.  You can run it from the source tree of @var{EtLinux} or (suggested)
+in a different directory.
+
+To run @var{ICE} in a compilation directory different from the source tree,
+go to that directory and invoke @var{ICE} using the full pathname to
+the @var{EtLinux} source tree (where @var{ICE} lives by default).
+
+If you want to place @var{ICE} in your path, instead, you'll have to
+define @code{SOURCEDIR} in your environment so it can find @var{EtLinux}
+files.
+
+Currently nothing more is documented. @var{ICE} is both easy to use
+and a moving target, so I'll add documentation at a later time.
+
+@c ########################################################################
+@node EtLinux packages, Installing to the target system, ICE (Interactive Compilation Ehlper), Top
+@chapter EtLinux packages
+
+@menu
+* Writing your package::        
+* Available Packages::          
+@end menu
+
+@c ==========================================================================
+@node    Writing your package, Available Packages, EtLinux packages, EtLinux packages
+@section Writing your package
+
+To be written.
+
+@c ==========================================================================
+@node    Available Packages,  , Writing your package, EtLinux packages
+@section Available Packages
+
+This section includes assorted notes about various packages, explaining
+some details you might find useful in troubleshooting. The packages
+are ordered alphabetically, but base and libc packages are described first.
+Please note that not all the packages compile under all platforms. Some 
+hints on how to replace non-working packages are also provided below.
+
+
+@menu
+* _base::                       
+* libc-5.4.46::                 
+* host-glibc::                  
+* arm-hhl-glibc::               
+* bash-1.14.7::                 
+* busybox-0.60.2::              
+* cardmgr::                     
+* df-0.0.1::                    
+* dpk::                         
+* elvis-tiny-1.4::              
+* ettcl-13::                    
+* fileutils-3.13::              
+* gdbserver-5.2::               
+* grub-0.5.96.1::               
+* gzip-1.2.4::                  
+* mingetty-0.9.4-prosa2::       
+* mini-pivot::                  
+* modutils-2.3.11::             
+* mount-2.5l::                  
+* net-tools-1.32-alpha::        
+* netfiles-1.0.0::              
+* NetKit-B-0.0.8::              
+* procps-1.0.1::                
+* sample-cgi and sample-html::  
+* sh-utils-1.12::               
+* tar-1.13.7::                  
+* termcap-2.0.8::               
+* textutils-1.19::              
+* udplogs::                     
+* util-linux-2.5::              
+* vim-4.2::                     
+@end menu
+
+@c --------------------------------------------------------------------------
+@node _base, libc-5.4.46, Available Packages, Available Packages
+@subsection _base
+
+The @var{_base} package creates the directory tree including the
+devices. In older versions, @file{/usr} and
+@file{/usr/local} used to be symbolic links to the root directory.
+Such entries have now been transformed into real directories to 
+avoid overwriting them when unpacking tar archives on the target tree.
+
+This base tree (and especially the list of devices included) is most
+likely suboptimal for you. In order to change it you have two options:
+
+@itemize @bullet
+
+@item
+	Create your own @var{_base} tarball, called
+        ``@code{_base-}@var{config}@code{.tar.gz}'', where @var{config}
+        is the name of the config file you are using.
+
+	If such file exists, @var{make} will uncompress and install that
+        file instead of the default @code{_base.tar.gz}.
+
+@item
+	Change the installed tree using customizations.
+        @xref{Customizations}.
+
+@end itemize
+
+@strong{Warning:} If you run 2.0 without the serial-console patch
+or the patch we distribute (that includes the serial-console one),
+the file @file{/dev/console} as included in @code{_base.tar.gz} won't
+exist. Some services (for example @var{ettcl-telnetd}) will try
+to log connections on @file{/dev/console} and will fail, closing
+the connection.
+
+The fix when running version 2.0-vanilla of the kernel is
+replacing @file{/dev/console} with a symbolic link to @file{/dev/tty0}.
+Again, this can be accomplished either by providing your owb base tree
+or by making the change at customization time.
+
+@c --------------------------------------------------------------------------
+@node libc-5.4.46, host-glibc, _base, Available Packages
+@subsection libc-5.4.46
+
+This version of libc5 includes a patch to prevent initialization of the FPU
+(math coprocessor). This allows building an i386 system without coprocessor
+and without emulation support in the kernel. We did it in order to save
+40kB in our minimal system.  Nowadays @var{libc5} support is mostly
+historical, and you'll most likely want to use one of the @var{libc6} versions.
+Besides, @var{libc5} is only supported on the x86 platform.
+
+If you compile @var{libc5} from sources, you'll need to have a valid
+2.0 include tree under @file{/usr/src/linux/include}. If you get an early
+error during compilation, you'll most likely need to configure and
+compile the kernel under @file{/usr/src/linux}, as the symbolic link
+@file{include/asm} (that points to @file{include/asm-i386}) is generated
+during kernel compilation and is missing from a fresh tree. To
+compile 2.0, see @ref{Linux-2.0}.
+
+If your tree in @file{/usr/src/linux} is a 2.2 or later kernel, @i{libc5}
+will not compile properly. This is unfortunate, but @i{libc5} is pretty
+old and won't be supported even by further @i{EtLinux} releases.
+
+@c --------------------------------------------------------------------------
+@node host-glibc, arm-hhl-glibc, libc-5.4.46, Available Packages
+@subsection host-glibc
+
+The target libc when the @var{host-native} platform is selected. 
+This package is not compiled: binaries are just copied from 
+@file{/lib} on the host machine to the target tree. The host is 
+supposed to run a glibc-2.x library. Otherwise, some packages may require 
+adjustments to compile.
+
+@c --------------------------------------------------------------------------
+@node arm-hhl-glibc, bash-1.14.7, host-glibc, Available Packages
+@subsection arm-hhl-glibc
+
+The target libc when the @var{arm-cross-hhl} platform is selected. 
+This package isn't compiled: files are just copied from the glibc which is 
+part of the Hard Hat Linux distribution.
+
+
+@c --------------------------------------------------------------------------
+@node bash-1.14.7, busybox-0.60.2, arm-hhl-glibc, Available Packages
+@subsection bash-1.14.7
+
+@var{EtLinux} includes version 1 of @var{bash} instead of version 2.
+This is mainly for historical reasons and partly for size reasons.
+There are two main issues to keep in mind with this package: compilation
+for non-x86 targets (either cross-compilation or native) and dependency
+on @var{termcap}.
+
+Since this version of @var{bash} is not designed for cross-compiling,
+a patch is applied to allow cross-compilation. Such setup has only
+been tested on a PC cross-compiling for ARM-little-endian.
+
+Cross-compilation with this package is guaranteed to fail when the
+target has a different byte order than the host.  The result is also
+unpredictable on non-mainstream platforms because the tool has not
+@var{autoconf} but simply selects host features from a list of known
+hosts (and only old configurations were known when the package was
+published).
+
+@c FIXME-2.0
+So, while we currently stick to version 1 of @var{bash}, we'll surely
+switch to version 2 for the next major release of @var{EtLinux}.
+
+As far as @var{termcap} is concerned, you need to compile the
+distributed version of the @var{termcap} library before you can compile
+@var{bash}. Therefore, if you @code{make bash-1.14.7.bin} you'll
+encounter en error if @var{termcap} has not been untarred and compiled
+first. Also note that @var{bash} looks for @file{libtermcap.so.2} , 
+while @var{libtermcap} is compiled as @file{libtermcap.so.2.0.8}. 
+This can result in a runtime error when trying to execute bash.
+This problem can be easily solved by running the @var{ldconfig}
+customization when using @var{bash}.
+
+@c --------------------------------------------------------------------------
+@node busybox-0.60.2, cardmgr, bash-1.14.7, Available Packages
+@subsection busybox-0.60.2
+
+This package provides a lot of common Unix commands implemented as a 
+single executable. For this reason, it can be used when some command is 
+not implemented by the other Etlinux packages or, on some platforms, as a 
+replacement for packages which cannot be easily compiled.
+
+Busybox can be configured by modifying its Config.h file before compilation.
+
+Etlinux sets up a default configuration which should be ok for many purposes, 
+but if you want you can customize busybox at your will by simply building 
+a new package (called busybox-custom, for example) which just copies a 
+Config.h to the busybox directory and then compiles busybox.
+
+To do that, you can use the following build file fragment:
+
+@example
+#
+# Building busybox with a customized config.h
+#
+source: busybox-0.60.2
+
+# compiling is easy, but first copy Config.h
+build-begin
+        CFG=$SOURCEDIR/busybox-custom-0.60.2.cfg
+        diff $CFG Config.h > /dev/null || cp $CFG Config.h
+        make
+build-end
+
+# and installing is trivial
+install-begin
+        make install-hardlinks PREFIX=$TARGET
+install-end
+@end example
+ 
+busybox-custom will use the standard busybox sources, but the file 
+busybox-custom-0.60.2.cfg (in the etlinux sources directory) will replace 
+the standard Config.h before compilation.
+
+@c --------------------------------------------------------------------------
+@node cardmgr, df-0.0.1, busybox-0.60.2, Available Packages
+@subsection cardmgr
+
+The package builds a cardmgr binary and a script meant to set up any
+card that is already plugged at boot time. If you want a complete
+@var{pcmcia-cs} installation you'll have to create a different
+@var{EtLinux} package.
+
+The only problem with @var{pcmcia-cs} sources is that they want to know
+where your own kernel sources are living. This is needed to compile
+modules for the correct kernel version. The problem has not been
+addressed by the @var{cardmgr} package in @var{EtLinux} because no module
+is being built and the default @file{/usr/src/linux} is used.
+
+If you have no valid kernel source in @file{/usr/src/linux} you'll most
+likely get an error while compiling the package. Please note that
+there's not specific need for @file{/usr/src/linux} to be the same
+kernel you use on the target system.
+
+@c --------------------------------------------------------------------------
+@node df-0.0.1, dpk, cardmgr, Available Packages
+@subsection df-0.0.1
+
+df is a stripped-down version of df (2.8k under libc5). The same command is 
+also available as a busybox command.
+
+@c --------------------------------------------------------------------------
+@node dpk, elvis-tiny-1.4, df-0.0.1, Available Packages
+@subsection dpk
+
+The @var{dpk} package builds a kernel module (dpk.o) which takes whatever is 
+written to @file{/dev/printk} (misc device with major,minor = 10,68) and 
+sends it to the kernel log buffer via printk(). Furthermore a script (called 
+@file{S50logger}) is installed in @file{/etc/init.d/scripts/} to automatically 
+insmod @file{dpk.o} at startup.
+@strong{WARNING}: since the location of the kernel headers is needed to 
+compile dpk, you must have the environment variable 
+@code{ETLINUX_KERNEL_SOURCE}
+defined before compiling. Otherwise compilation will anyway succeed, but 
+no module will actually be installed.
+Note that you can send all the logs to the kernel log buffer by
+symlinking @file{/var/log/ettcl.log} to @file{/dev/printk} or directly
+changing @code{options(logfile)} to @file{/dev/printk} in 
+@file{/etc/init.d/options}.
+
+@c --------------------------------------------------------------------------
+@node elvis-tiny-1.4, ettcl-13, dpk, Available Packages
+@subsection elvis-tiny-1.4
+
+A very small vi-compatible editor with limited capabilities. 
+
+@c --------------------------------------------------------------------------
+@node ettcl-13, fileutils-3.13, elvis-tiny-1.4, Available Packages
+@subsection ettcl-13
+
+The "core" of etlinux. See ettcl documentation for more information about 
+the ettcl language and all the ettcl-related packages (ettcl-cmdd, 
+ettcl-httpd, ettcl-telnetd, ettcl-crond).
+
+@c --------------------------------------------------------------------------
+@node fileutils-3.13, gdbserver-5.2, ettcl-13, Available Packages
+@subsection fileutils-3.13
+
+This package provides the following commands: @var{chmod}, @var{cp}, 
+@var{dd}, @var{df}, @var{du}, @var{ln}, @var{ls}, @var{mkdir}, @var{mknod},
+@var{mv}, @var{rm}, @var{rmdir}, @var{sync}, @var{touch}.
+
+Some of the commands are also supplied by other packages (ettcl and busybox).
+
+
+@c --------------------------------------------------------------------------
+@node gdbserver-5.2, grub-0.5.96.1, fileutils-3.13, Available Packages
+@subsection gdbserver-5.2
+
+The @var{gdbserver} package builds a @code{gdbserver} binary from
+@var{gdb-5.2} sources. It can't be compiled with @var{libc5} as the
+new @var{gdb} depends on @var{glibc} features and we didn't feel very
+useful to backport it.
+
+@c --------------------------------------------------------------------------
+@node  grub-0.5.96.1, gzip-1.2.4, gdbserver-5.2, Available Packages
+@subsection  grub-0.5.96.1
+
+grub is configured with the following flags:
+
+@itemize @bullet
+@item    @code{--without-curses}: don't use the curses library.
+@item    @code{--enable-diskless}: enable diskless support. 
+@item    @code{--enable-ne}, @code{--enable-ns8390} @code{--enable-rtl8139}: 
+enable support for ne2000, ns8390 and rtl8139 cards.
+@end itemize
+
+For more details on network support, you can have a look at
+@file{README.netboot} under the @file{netboot} directory of the grub sources. 
+To modify the configuration flags just edit @file{grub-0.5.96.1.build}.
+
+grub-0.5.96.1 is patched as follows:
+
+@itemize @bullet
+@item    If a config file name looks like @file{<NAME>.#}, then the '#' gets 
+         replaced with the IP address of the machine. So grub will look 
+         for a config file named @file{<NAME>.<MACHINE_IP_ADDRESS>}. 
+         This is quite convenient in case you have several diskless machines 
+         and want to customize the config files based on each
+         machine's IP address.
+@item    When the terminal switches from serial port to console or vice-versa
+         a warning message is issued. This avoids the user being tricked 
+         into thinking that the machine is stuck while it's just using
+         a different terminal.
+@item    The default timeout for the @code{terminal} command is set to 5 
+         seconds instead of being disabled. This allows the use of such 
+         command in a non-interactive environment.
+@item    A few C glitches has been fixed to compile cleanly with gcc-3.3.2
+@end itemize
+
+When grub is selected, the following files are installed on the target:
+
+@itemize @bullet
+@item
+         @file{grub} (the grub executable) is copied to @file{/sbin/}.
+@item    
+         @file{stage1/stage1} and @file{stage2/stage2} are copied to 
+         @file{/boot/grub/}.
+@item
+        A sample @file{menu.lst} is generated in @file{/boot/grub/}. You 
+        should modify it according to your grub installation following 
+        the instructions listed below @xref{Installing GRUB}.
+      
+@end itemize
+
+grub is only available for x86 targets.
+
+
+@c --------------------------------------------------------------------------
+@node gzip-1.2.4, mingetty-0.9.4-prosa2, grub-0.5.96.1, Available Packages
+@subsection gzip-1.2.4
+
+This package provides @var{gzip}, @var{gunzip} and @var{zcat}.
+
+@c --------------------------------------------------------------------------
+@node mingetty-0.9.4-prosa2, mini-pivot, gzip-1.2.4, Available Packages
+@subsection mingetty-0.9.4-prosa2
+
+A mingetty modified to work with the Etlinux init. Relevant startup scripts 
+are also installed in @file{/etc/init.d/respawn/}.
+
+@c --------------------------------------------------------------------------
+@node mini-pivot, modutils-2.3.11, mingetty-0.9.4-prosa2, Available Packages
+@subsection mini-pivot
+
+A do-it-all for @var{pivot_root(8)}. This program executes all the 
+operations needed to switch to the new root filesystem. See the 
+pivot_root man page and the program's source code for more details.
+
+This package will compile under @var{host-glibc} only and cannot be 
+replaced under the other platforms. 
+
+One case in which you may be interested in @var{mini-pivot} is when boot takes 
+place from a hard disk, while the final root file system is a @var{tmpfs} (a 
+file system based on virtual memory). Since @var{tmpfs} needs to be populated 
+before being mounted, a temporary rootfs could take care of such task and 
+then call @var{mini-pivot} to switch to the final rootfs.
+
+tmpfs makes it possible to avoid mounting a disk partition as root file 
+system and has a dynamic size, which is an important advantage for embedded 
+targets.
+
+@c --------------------------------------------------------------------------
+@node modutils-2.3.11, mount-2.5l, mini-pivot, Available Packages
+@subsection modutils-2.3.11
+
+This package provides @var{insmod}, @var{rmmod}, @var{lsmod} and 
+@var{modprobe}. busybox versions of the same commands are also available.
+
+@c --------------------------------------------------------------------------
+@node mount-2.5l, net-tools-1.32-alpha, modutils-2.3.11, Available Packages
+@subsection mount-2.5l
+
+This package implements the mount command and requires libc5 to compile.
+You can replace it with ettcl mount or busybox mount.
+
+@c --------------------------------------------------------------------------
+@node net-tools-1.32-alpha, netfiles-1.0.0, mount-2.5l, Available Packages
+@subsection net-tools-1.32-alpha
+
+This package provides @var{ifconfig}, @var{route}, @var{netstat}. The 
+same commands (except @var{netstat}) can be provided by busybox too.
+
+@c --------------------------------------------------------------------------
+@node netfiles-1.0.0, NetKit-B-0.0.8, net-tools-1.32-alpha, Available Packages
+@subsection netfiles-1.0.0
+
+This package installs some (really minimal) network configuration files 
+(@file{/etc/inetd.conf}, @file{etc/nsswitch.conf} and @file{/etc/services}), 
+plus ad inetd startup script (@file{etc/init.d/scripts/S20inetd}).
+
+
+@c --------------------------------------------------------------------------
+@node NetKit-B-0.0.8, procps-1.0.1, netfiles-1.0.0, Available Packages
+@subsection NetKit-B-0.0.8
+
+This package provides @var{ftp}, @var{ping}, @var{inetd}, @var{telnetd}, 
+@var{tftpd}. Some of these programs can be replaced by their busybox 
+counterparts.
+
+@c --------------------------------------------------------------------------
+@node procps-1.0.1, sample-cgi and sample-html, NetKit-B-0.0.8, Available Packages
+@subsection procps-1.0.1
+
+The @var{ps} command. This package compiles under the @var{i386-native-libc5}
+platform only . You can use ettcl or busybox @var{ps} to replace it. 
+
+@c --------------------------------------------------------------------------
+@node sample-cgi and sample-html, sh-utils-1.12, procps-1.0.1, Available Packages
+@subsection sample-cgi and sample-html
+
+These packages install some demo html pages and cgis under @file{/html} on 
+the target tree. Cgis are mostly written in ettcl, but some of them also 
+require other programs (bash for example). See the file cgidemo.html, 
+included in sample-cgi, for more details.
+
+@c --------------------------------------------------------------------------
+@node sh-utils-1.12, tar-1.13.7, sample-cgi and sample-html, Available Packages
+@subsection sh-utils-1.12
+
+This package provides @var{basename}, @var{date}, @var{echo}, @var{env}, 
+@var{expr}, @var{nice}, @var{pwd}, @var{sleep}, @var{stty}, @var{tty}, 
+@var{uname}, @var{true}, @var{false}. Almost all such commands are provided 
+by @var{busybox} too.
+
+
+@c --------------------------------------------------------------------------
+@node tar-1.13.7, termcap-2.0.8, sh-utils-1.12, Available Packages
+@subsection tar-1.13.7
+
+This package provides @var{tar}, whose "stripped down" version is available 
+from busybox too. 
+
+@c --------------------------------------------------------------------------
+@node termcap-2.0.8, textutils-1.19, tar-1.13.7, Available Packages
+@subsection termcap-2.0.8
+
+This package provides @var{libtermcap}, which is needed by some other 
+packages (@var{bash} for example).
+
+@c --------------------------------------------------------------------------
+@node textutils-1.19, udplogs, termcap-2.0.8, Available Packages
+@subsection textutils-1.19
+
+This package provides @var{cat}, @var{cut}, @var{head}, @var{md5sum}, 
+@var{od}, @var{sort}, @var{split}, @var{tail}, @var{tr}, @var{wc}. 
+Most of these programs can be replaced by their busybox versions.
+
+@c --------------------------------------------------------------------------
+@node udplogs, util-linux-2.5, textutils-1.19, Available Packages
+@subsection udplogs
+
+@i{udplogs} reads kernel messages from 
+@file{/proc/kmsg} and sends them to a configurable destination 
+(broadcast messages allowed) using the UDP protocol. 
+
+As soon as it is started, @i{udplogs} reads the configuration file 
+@file{/etc/udplogs} (if existing) and then whatever file is specified by 
+@code{options(udplogs:cfg)} 
+
+At the moment just the option @code{options(udplogs:dest)} is considered.
+If @code{options(udplogs:dest)} contains a string of the form "IP:PORT", 
+then the first part of the string, before the ':', is interpreted as an IP
+address (which must be specified in decimal dotted notation), 
+while the second part, after the ':', is interpreted as a UDP port 
+number. On the other hand, if @code{options(udplogs:dest)} does not contain 
+any ':', then it is interpreted as a UDP port number and messages are 
+sent to the broadcast IP address 255.255.255.255 .
+
+If @code{options(udplogs:dest)} is not specified, it is assigned a default 
+value equal to "26913". So udplogs messages are sent by default to port
+26913 udp, using the broadcast IP address. .
+
+@c --------------------------------------------------------------------------
+@node util-linux-2.5, vim-4.2, udplogs, Available Packages
+@subsection util-linux-2.5
+
+This package provides @var{login}, @var{passwd}, @var{kill}, @var{reset}, 
+@var{clear}, @var{kbdrate}, @var{chroot}, @var{fdisk} and @var{rdev}. 
+For non-x86 packages, only  @var{login} and @var{passwd} are compiled. 
+Some of the commands can be replaced by busybox, however.
+
+@c --------------------------------------------------------------------------
+@node vim-4.2,  , util-linux-2.5, Available Packages
+@subsection vim-4.2
+
+A version of vi. This package can be compiled for x86 targets only and 
+can be replaced by @var{elvis} and the busybox version of vi.
+
+@c ########################################################################
+@node    Installing to the target system, Platform-specific, EtLinux packages, Top
+@chapter Installing to the target system
+
+@menu
+* Installing a kernel::         
+* Copying the filesystem::      
+* Installing Lilo::             
+* Installing GRUB::             
+@end menu
+
+@c ==========================================================================
+@node    Installing a kernel, Copying the filesystem, Installing to the target system, Installing to the target system
+@section Installing a kernel
+
+@c --------------------------------------------------------------------------
+@menu
+* Installing the kernel image      ::  
+* Installing modules::          
+@end menu
+
+@node Installing the kernel image      , Installing modules, Installing a kernel, Installing a kernel
+@subsection Installing the kernel image
+
+To be written.
+
+@c --------------------------------------------------------------------------
+@node Installing modules,  , Installing the kernel image      , Installing a kernel
+@subsection Installing modules
+
+To be written.
+
+@c ==========================================================================
+@node    Copying the filesystem, Installing Lilo, Installing a kernel, Installing to the target system
+@section Copying the filesystem
+
+Embedded targets are often equipped with non-typical storage devices, such 
+as flash memory chips, compact flash devices, flash disks and so on.
+
+As a consequence, no standard installing instructions can be given. What we 
+try to do in this paragraph is to sketch-out some general strategies, which 
+shall be adapted to the real target. In particular, two cases will be 
+considered: installing the Etlinux tree on the target during development and 
+installing on a production system.
+
+@menu
+* Development phase::           
+* Production phase::            
+@end menu
+
+@c --------------------------------------------------------------------------
+@node Development phase, Production phase, Copying the filesystem, Copying the filesystem
+@subsection Development phase
+
+During development, a very fast path must be established to speed up the 
+"test-modify-re-test" cycle.
+
+If you're working on an host-native platform (or even on a libc5 one, provided 
+that you have a libc5 compatible environment installed on the host), 
+a quick way to test a tree is to do chroot on the host. For example:
+
+@example
+cd <build directory>/Trees
+[ciminaghi@@homemain Trees]$ sudo chroot Etlinux ettclsh
+\%
+ 
+@end example
+
+where <build directory> is the path of the etlinux build directory on the 
+host.
+
+This procedure can help you check the basic things, such as 
+whether you have all the necessary libraries in place.
+
+On the other hand, if you're cross-compiling or if you want to do a thorough
+test, you must use a real target (even if not necessarily the 
+production one). In such case, a very convenient configuration is the 
+one which requires diskless boot for the target. A detailed 
+description of diskless booting is outside the scope of this manual, so 
+here we just see an example involving the arm platform.
+
+What is usually done is to set up a bootp/dhcp server, a tftp server and 
+to export the target tree via nfs. 
+Here 's a fragment of my @file{/etc/dhcpd.conf}: 
+
+@example
+#
+# dhcpd.conf
+#
+
+...........
+
+host atmel @{
+ hardware ethernet 12:34:56:78:90:aa;
+ fixed-address 10.0.0.23;
+ option host-name "atmel";
+ filename "uImage.2419.atmel1";
+@}
+
+@end example
+
+Since etlinux was compiled in a directory under @file{/home/develop}, we 
+export it via nfs to the target (of course host atmel shall appear in 
+@file{/etc/hosts} too) : 
+
+
+
+@example
+#
+# /etc/exports: the access control list for filesystems which may be exported
+#               to NFS clients.  See exports(5).
+........
+/home/develop  atmel(rw,no_root_squash)
+
+
+@end example
+
+Finally, a tftp server must be setup:
+
+@example
+
+#
+# /etc/inetd.conf:  see inetd(8) for further informations.
+#
+# Internet server configuration database
+#
+
+....
+
+tftp      dgram   udp     wait    nobody  /usr/sbin/in.tftpd -p -v -s /tftpboot
+
+....
+
+@end example
+
+Nowadays boot loaders almost always understand dhcp and allow 
+files to be uploaded via tftp. Our target, for example, works with 
+Uboot, so here's the list of commands needed to get the board to boot:
+
+@example
+
+Uboot> dhcp
+BOOTP broadcast 1
+DHCP client bound to address 10.0.0.23
+TFTP from server 10.0.0.14; our IP address is 10.0.0.23
+Filename 'uImage.2419.atmel1'.
+Load address: 0x21000000
+Loading: #################################################################
+         #################################################################
+done
+Bytes transferred = 661129 (a1689 hex)
+Uboot> setenv bootargs root=/dev/nfs rw \
+nfsroot=10.0.0.14:/home/develop/etlinux-test/arm/arm-cross-hhl/Trees/Etlinux \
+console=ttyS0,115200 mem=32M ip=dhcp devfs=nomount
+Uboot> bootm 0x21000000
+## Booting image at 21000000 ...
+   Image Name:   
+   Image Type:   ARM Linux Kernel Image (gzip compressed)
+   Data Size:    661065 Bytes = 645.6 kB
+   Load Address: 20008000
+   Entry Point:  20008000
+   Verifying Checksum ... OK
+   Uncompressing Kernel Image ... OK
+
+Starting kernel ...
+
+Linux version 2.4.19-rmk7 (ciminaghi@@homemain) (gcc version 2.95.3 20010315 (re4
+CPU: Arm920Tid(wb) revision 0
+
+.......
+
+
+Starting init process ...
+
+Remounting /
+Mounting /proc
+Removing /tmp/* and /var/run/*
+Configuring loopback interface
+
+\% 
+@end example
+
+Note that the kernel is not installed on the target at this moment. It just 
+has to be copied to @file{/tftpboot} on the host because the tftp server 
+has been configured to chroot there before doing anything else. 
+
+If you're working with an x86 pc target, you can follow exactly the same 
+procedure since the Grub boot loader supports network booting. You may also 
+consider booting from the network adapter. In such case, the development 
+platform wouldn't even need any disk or storage device.
+
+@c --------------------------------------------------------------------------
+@node Production phase,  , Development phase, Copying the filesystem
+@subsection Production phase
+
+The most important thing for production is to find a fast way to initialize 
+the target and store the kernel and root file system images on it. 
+
+If a network interface is available, you can use it to make things easier. 
+You could for example boot the board with a provisional root 
+file system containing the kernel and final root file system images.
+The first boot file system could be loaded via tftp as an initial ramdisk 
+image. It should contain an install script, which will copy the final 
+images, after having performed all the necessary initialization tasks (i.e. 
+partitioned/formatted the storage device(s) and installed the boot loader).
+
+In case the target has an IDE disk, but no network interfaces, 
+you can temporarily mount the disk on the host, do the copy and finally
+move it back to the target. This procedure takes a longer time than the first 
+one. Also, moving a disk from a machine to another one can confuse the 
+boot loader. 
+@xref{An example}, @xref{Installing GRUB to (hd1)}. 
+
+
+
+@c ==========================================================================
+@node    Installing Lilo, Installing GRUB, Copying the filesystem, Installing to the target system
+@section Installing Lilo
+
+Lilo is the traditional boot loader for x86 PCs. Although it is less rich in 
+features than GRUB (for instance it lacks support for reading files from a 
+server via tftp), many people still feel more familiar with it than with 
+any other boot loader. 
+So here are some paragraphs with directions on how to install Lilo on an 
+embedded PC.
+
+@c --------------------------------------------------------------------------
+@menu
+* Overview::                    
+* The Lilo install program::    
+* An example::                  
+@end menu
+
+@c --------------------------------------------------------------------------
+@node    Overview, The Lilo install program, Installing Lilo, Installing Lilo
+@subsection Overview
+
+@strong{Disclaimer}: Note that this and the following paragraphs are not 
+intended as a PC boot tutorial, nor they aim at replacing the Lilo manual. 
+They're just a short collection of notes which could possibly help you 
+while installing Etlinux on the target.
+
+We assume the target boots from a hard disk, or whatever device shows itself
+as a hard disk (such as a compact flash device, for example).
+The following steps shall tipically take place on boot:
+
+@itemize @bullet
+@item
+	The BIOS looks for a device to boot from and loads its MBR 
+        (Master Boot Record) contents into RAM.
+        The MBR contains a very small program, called first stage loader
+        or primary loader, and the disk's partition table.
+@item
+        The BIOS transfers control to the first stage loader. In our case,
+        the first stage loader is part of Lilo itself, since we assume 
+        Lilo to be installed in the MBR. 
+@item   
+        The first stage loader reads a map file from disk. 
+        The location of such map file is embedded in the primary loader 
+        image itself, which is created at install time. The map 
+        file too is created at install time.
+@item
+	Using the map file, the first stage loader locates the second 
+        stage loader and loads it from disk, finally releasing control 
+        to it. 
+@item
+        The second stage loader does the rest of the job (i.e. lets the 
+        user choose what kernel must be loaded, possibly loads a ramdisk
+        image, loads the kernel image and boots the kernel), using the 
+        map file to locate the files it needs.
+@end itemize
+
+As you can see from this short explanation, Lilo strongly depends on 
+a set of files which are created at install time. 
+For this reason, Lilo needs to be reinstalled every time something changes 
+(i.e.: some file is moved or the configuration changes).
+
+@c --------------------------------------------------------------------------
+@node    The Lilo install program, An example, Overview, Installing Lilo
+@subsection The Lilo install program
+
+When launched, the Lilo install program (usually @file{/sbin/lilo}) reads 
+the Lilo configuration file (usually @file{/etc/lilo.conf}) and installs the 
+first stage loader and the other files needed by the boot loader.
+
+The Lilo install program is of course mandatory to get Lilo installed. So, 
+since Lilo is not part of Etlinux, you shall have the Lilo package installed 
+on the host machine first.
+
+Note that the first stage loader can be installed either in the MBR or in the 
+boot block of a partition. As said before, we'll just consider the case of 
+MBR installation, which is the common one for embedded targets.
+
+@c --------------------------------------------------------------------------
+@node    An example,  , The Lilo install program, Installing Lilo
+@subsection An example
+
+Setting up a Lilo configuration file is not a difficult task most of the 
+times, since many examples are already available. Here we'll just see 
+how to install Lilo on the second disk of the host machine (actually 
+the third in our example) and then mount the same disk as the first one on 
+the target.
+
+@itemize @bullet
+@item
+        First of all set the target disk up with the target's root file 
+        system. 
+@item
+        We'll assume that the target disk is @file{/dev/hdc} and 
+        has just one partition (@file{/dev/hdc1}) which has been mounted
+        under @file{/mnt} on the host. 
+@item
+        Create a @file{/mnt/boot} directory and copy the kernel image 
+        and the file @file{/boot/boot.b} there.
+@item
+        Create a lilo configuration file somewhere (for instance 
+        @file{/etc/lilo.conf.etlinux}). 
+        @strong{WARNING}: be careful not to overwrite the @file{/etc/lilo.conf}
+        of the host, of course. 
+
+        Here's an example of a @file{lilo.conf}
+        suitable for our configuration:
+
+@example
+disk=/dev/hdc
+ bios=0x80
+ sectors=17
+ cylinders=965
+ heads=5
+boot=/dev/hdc
+root=/dev/hda1
+install=/mnt/boot/boot.b
+map=/mnt/boot/map
+delay=100
+vga=extended
+default=etlinux
+image=/mnt/boot/zImage-2.0.39
+      label=etlinux
+      read-only
+@end example
+
+       Note that @var{sectors=}, @var{cylinders=}, @var{heads=} may not
+       be necessary in your case. Another important thing here 
+       is that we specified that disk @file{/dev/hdc} will be 
+       numbered as 0x80 by the target's BIOS. This will do the trick
+       when moving the disk to the target. Finally, @var{boot=/dev/hdc}
+       states that the first stage loader shall be installed in the 
+       MBR of @file{/dev/hdc}.
+@item
+       Run @file{/sbin/lilo} with @file{/etc/lilo.conf.etlinux} as the 
+       configuration file:
+
+@example
+sudo lilo -C /etc/lilo.conf.etlinux
+@end example
+
+@item
+       You can now turn off the host and move its @file{/dev/hdc} to the
+       target.
+
+@end itemize
+
+
+@c ==========================================================================
+@node    Installing GRUB,  , Installing Lilo, Installing to the target system
+@section Installing GRUB
+
+An alternative to Lilo on the x86 platform is GRUB (GRand Unified
+Boot-loader).  Like Lilo or any other boot loader, it writes its first
+stage into the boot sector and uses a block list to load the second
+stage.  Unlike Lilo, its second stage includes filesystem support so
+it can offer an interactive command line at boot time, useful to
+select alternate kernels or alternate boot devices; moreover, you can
+edit the configuration file or replace kernels without reinstalling
+the loader itself (since everything after the second stage is loaded
+by decoding filesystem data structures, not using volatile block lists
+that must be replaced every time you modify one of the involved
+files).
+
+The version we suggest and distribute is 0.5.96.1; this documentation
+refers to that specific version, other versions may have minor
+differences since GRUB is still in active development.
+
+If you want to install it on a desktop system, you should follow the
+instructions in the package itself.  But an embedded device is a
+different kind of animal, since you usually don't want to install the
+whole package on the target and you have no local package management
+to keep track of it.
+
+@c --------------------------------------------------------------------------
+@menu
+* Installing GRUB to (hd0)::    
+* Installing GRUB to (hd1)::    
+* The GRUB configuration file::  
+@end menu
+
+@node    Installing GRUB to (hd0), Installing GRUB to (hd1), Installing GRUB, Installing GRUB
+@subsection Installing GRUB to (hd0)
+
+
+The following instructions apply when you install GRUB directly on the
+target, assuming your storage device is identified as an hard drive by
+the BIOS, and assuming it is the ``first'' hard drive (or the only
+one).
+
+@itemize @bullet
+@item
+	Install grub-0.95.6 as an Etlinux package. This will copy 
+        the files listed in @ref{grub-0.5.96.1} onto the target's tree.
+@item
+        If you want you can of course install any other version of grub, 
+        but in such case you must either manually copy the files or 
+        adding a new grub package and the corresponding .build file.
+@item
+	Edit the sample configuration file or create a new one from scratch. 
+@item
+	Invoke a grub shell and run the command ``@code{install
+	(hd0,0)/boot/grub/stage1 (hd0) (hd0,0)/boot/grub/stage2
+	(hd0,0)/boot/grub/menu.lst}''. The GRUB shell can be either
+	the @var{grub} executable or the GRUB prompt at boot time.
+	The executable is found as @var{grub/grub} in the
+	directory where you compiled the package or the version
+	installed in your desktop system, if you can access it via
+	NFS or similar means. To get a boot prompt, you can simply
+	either use @var{netboot}/@var{PXEboot}, or copy GRUB
+	to floppy and boot from floppy; ``@code{cat stage1 stage2 >
+	/dev/fd0}'' works perfectly to this aim.
+
+@end itemize
+
+The culprit of the installation is therefore the command (typed on
+a single line):
+
+@example
+   install (hd0,0)/boot/grub/stage1 (hd0) (hd0,0)/boot/grub/stage2
+           (hd0,0)/boot/grub/menu.lst
+@end example
+
+It means: ``install @file{stage1} on @var{hd0} with a block list for
+@file{stage2} and the name of @file{menu.lst}.
+
+To get detailed information about GRUB device naming, please refer to
+the GRUB manual.
+
+
+@c --------------------------------------------------------------------------
+@node    Installing GRUB to (hd1), The GRUB configuration file, Installing GRUB to (hd0), Installing GRUB
+@subsection Installing GRUB to (hd1)
+
+Your installation setup may be such that you need to install GRUB to
+the second hard drive (that will be the first when you boot the target
+system).  In this case, after copying the files in the proper place,
+the right command is:
+
+@example
+   install (hd1,0)/boot/grub/stage1 (hd1) (hd1,0)/boot/grub/stage2
+           (hd0,0)/boot/grub/menu.lst
+@end example
+
+Here I assume you run from the first partition of the first hard drive
+(@file{/dev/hda1} in Linux) and install on the second hard drive.
+Note that the name of the configuration file is unchanged, since it
+is stored in the target system as a name, not as a block list.
+
+@c --------------------------------------------------------------------------
+@node    The GRUB configuration file,  , Installing GRUB to (hd1), Installing GRUB
+@subsection The GRUB configuration file
+
+This is what I use as configuration file for a native-or-diskless system
+I use in development:
+
+@example
+    timeout 5
+    
+    title etlinux
+      root (hd0,0)
+      kernel /bzImage root=/dev/hdc1 ip=bootp vga=1
+    
+    title nfsroot
+      root (hd0,0)
+      kernel /bzImage root=/dev/nfs nfsroot=/opt/giuda ip=bootp vga=1 rw
+    
+    title diskless
+      bootp
+      root (nd)
+      configfile /boot/tftpboot/menu.generic
+@end example
+
+Knowing that @code{(nd)} means ``network device'' (a virtual disk
+created after a successful @var{bootp} transaction), this example should
+be enough to be adapted for most @var{EtLinux} installations, provided
+you are used to kernel command lines.  To get more details about the
+configuration file and GRUB commands please refer to the GRUB manual.
+
+
+
+@c ########################################################################
+@node    Platform-specific, Kernels, Installing to the target system, Top
+@chapter Platform-specific
+
+To be written.
+
+@c ########################################################################
+@node    Kernels, A new competitor in the embedded systems arena, Platform-specific, Top
+@chapter Kernels
+
+The core of @var{EtLinux} isn't dependent from the kernel being used,
+so any will fit. In practice, we just discuss Linux-2.0, Linux-2.2 and
+Linux-2.4. You may run it with version 1.0 if you are so brave to compile
+it nowadays. If you are interested in later versions feel free to ask
+us, but no problems are expected.
+
+In practice, you'd only want to run newer kernels if you need some of
+the new features they offer. However, compiling a 2.0 kernel has become
+difficult with recent GNU/Linux distributions so you might want to avoid
+it as well.
+
+The following sections describe how to compile your kernels assuming you
+are using the Woody version of Debian GNU/Linux, or Potato, the previous
+one.
+
+@menu
+* Linux-2.0::                   
+* Linux-2.2::                   
+* Linux-2.4::                   
+@end menu
+
+@c ==========================================================================
+@node    Linux-2.0, Linux-2.2, Kernels, Kernels
+@section Linux-2.0
+
+This section assumes you compile 2.0.39, other versions may
+differ in the details.
+Some kernel patches for linux-2.0 are available (see directory 
+@file{kernel-patches} in the etlinux source tree),  aimed at reducing 
+the size of the kernel. In particular, the sizes of some static memory 
+allocations done by the kernel are turned into configurable options:
+
+@itemize @bullet
+@item
+	@code{CONFIG_ETLINUX_MAX} : when this option is set, all other Etlinux 
+        configuration options are automatically set to their default 
+        values (which allow maximum size reduction of the kernel). 
+        @strong{Warning:} when this option is set, the maximum char major 
+        number is limited to 11, while the maximum block major number is 
+        limited to 4. 
+        Make sure that none of the device drivers needed by your target 
+        requires higher major numbers, otherwise you might experience some 
+        problems.
+@item
+        @code{CONFIG_ETLINUX_LOGBUF} : this option is available only when 
+        @code{CONFIG_ETLINUX_MAX} is not set. It allows you to specify 
+        the size of the kernel log buffer (in kB), and must always be a 
+        power of two. Its default value is 1024.
+@item
+	@code{CONFIG_ETLINUX_MAJBLK} : this option is available only when
+        @code{CONFIG_ETLINUX_MAX} is not set. It allows you to specify 
+        the highest available major number for block devices. Its default 
+        number is 4.
+@item
+	@code{CONFIG_ETLINUX_MAJCHR} : this option is available only when
+        @code{CONFIG_ETLINUX_MAX} is not set. It allows you to specify 
+        the highest available major number for char devices. Its default 
+        number is 11.
+@item
+	@code{CONFIG_ETLINUX_CORE} : this option is available only when
+        @code{CONFIG_ETLINUX_MAX} is not set. It allows you to enable or 
+        disable core dump support. Its default value is false (core dump
+        support disabled).
+@item   
+	@code{CONFIG_ETLINUX_REQ} : this option is available only when
+        @code{CONFIG_ETLINUX_MAX} is not set. It allows you to specify 
+        the size of the struct request queue for block devices. Its default
+        value is 16.
+@item
+	@code{CONFIG_ETLINUX_REQ} : this option is available only when
+        @code{CONFIG_ETLINUX_MAX} is not set. It allows you to specify 
+        the size of the @code{struct request} queue for block devices. 
+        Its default value is 16.
+@item
+	@code{CONFIG_ETLINUX_VTNR} : this option is available only when
+        @code{CONFIG_ETLINUX_MAX} is not set. It allows you to specify 
+        the number of virtual terminals. Its default value is 4.
+@item
+	@code{CONFIG_ETLINUX_IOTABLE} : this option is available only when
+        @code{CONFIG_ETLINUX_MAX} is not set. It allows you to specify 
+        the number of ioport regions managed by the kernel. 
+        Its default value is 20.
+
+@end itemize
+
+Furthermore, two more patches have been introduced:
+
+@itemize @bullet
+@item
+         @code{CONFIG_ETLINUX_NOFPU}: The kernel can be configured to 
+         run on CPUs without any
+         math coprocessor and without math emulation.
+@item
+          If the kernel is booted with``@code{memmon=}@var{0}'', it will print 
+          to the console a snapshot of memory usage just before spawning 
+          the @var{init} process (therefore showing how much RAM has been 
+          eaten by dynamic allocation performed by the kernel
+          subsystems).  If you boot with ``@code{memmon=}@var{n}'', 
+          with @var{n} greater than zero, the kernel will also print memory 
+          information every that many seconds.  The feature is disabled 
+          by default and can be forced off by using a negative parameter.
+
+@end itemize
+
+In order to compile version 2.0 of the kernel you need version 2.7.2 of
+@var{gcc}. The default version on all recent distributions is a newer
+one, and the kernel source is designed to complain about that.
+
+Fortunately, Debian includes an earlier version of the compiler, the
+same we use in @var{EtLinux} to compile against @var{libc5}.  Since the
+kernel doesn't link with any library, you can use it without any side
+effect.  However, setting @code{CC} to the compiler name alone won't
+work because the @file{Makefile} assumes @code{CC} includes two
+options. The following command line works around this by setting
+@code{CC} to the compiler with the required options.
+
+@example
+  make zImage CC="i486-linuxlibc1-gcc -D__KERNEL__ -I$(/bin/pwd)/include"
+@end example
+@noindent
+(note that the command above uses shell syntax; csh users, like I am,
+are a minority nowadays and they know how to fix it).
+
+That said, you may still have problems with @var{fastdep} (I have such
+problems, and couldn't fix them in the few minutes I could devote to the
+problems).  The quick fix is running ``@code{touch .depend .hdepend}''
+so the @file{Makefile} won't try to generate dependencies.  Obviously,
+if you have no dependency information while building the kernel you'll
+need to @var{make clean} if you ever change anything in an header file.
+Another thing you could do, is replacing @file{scripts/mkdep.c} in the 
+kernel sources with one taken from a newer version of the kernel.
+
+With the tricks shown and after proper configuration, compilation will work 
+smoothly, although with several assembler warnings, as the new 
+@var{binutils} don't completely like the code generated by the older 
+compiler. You can ignore such warnings, the
+kernel will work fine.
+
+Here's what it reports on a 486 with 8MB of memory:
+
+@example
+   Calibrating delay loop.. ok - 49.97 BogoMIPS
+   Memory: 7012k/8192k available
+         (448k kernel code, 384k reserved, 348k data)
+   Linux version 2.0.39 (rubini@@ostro) (gcc version 2.7.2.3) ...
+@end example
+
+@strong{Warning}: since version 2.0 lacks by default support for
+the @var{console} device, the default @var{/dev/console} as found
+in @var{_base.tar.gz} won't work, and some services that log information
+to the console will be unavailable. See @ref{_base} for details.
+
+@c ==========================================================================
+@node    Linux-2.2, Linux-2.4, Linux-2.0, Kernels
+@section Linux-2.2
+
+This section assumes you compile 2.2.25, other versions may
+differ in the details.
+The same patches described for 2.0.39 apply to 2.2.5 also.
+
+Nothing special is needed to compile 2.2, the usual ``@code{make
+bzImage}'' will work by selecting the right compiler for your
+distribution. If it doesn't, you can use still specify your own
+compiler on the command line of @var{make}.
+
+Unfortunately, the default @var{Makefile} includes two @var{gcc} options
+in the definition of @code{CC} ( exactly like described above for version
+2.0), so you need to provide them as well. For example, the following
+command selects @var{gcc2.95} as the kernel compiler (using sh syntax):
+
+@example
+  make bzImage CC="gcc2.95 -D__KERNEL__ -I$(/bin/pwd)/include"
+@end example
+
+
+
+@c ==========================================================================
+@node    Linux-2.4,  , Linux-2.2, Kernels
+@section Linux-2.4
+
+This section assumes you compile 2.4.18, 2.4.19, 2.4.20 or 2.4.23. 
+Other versions may differ in the details.
+
+Version 2.4 of the Linux kernel is pretty fat, so you might want to hack
+with the configuration to reduce it as much as possible.  If size is a
+concern for your setup, you should remove all filesystems you aren't
+going to use in your target system; good candidates for removal are
+also the IDE subsystem, frame-buffer and text-console support, and
+system V IPC as it is rarely used. 
+
+This is the boot message of a 486 running a pretty standard configuration:
+
+@example
+   Memory: 6060k/8192k available
+         (892k kernel code, 1744k reserved,
+                             310k data, 208k init, 0k highmem)
+@end example
+
+The box, thus, had 6268 kilobytes available (after releasing @var{init}
+memory). By removing extra configuration options I got up to 6648 kBs.
+
+If you need to squeeze the last bit of memory without patching the
+source code, you can always try to ``@code{make CC="gcc -malign-jumps=1
+-malign-loops=1 -malign-functions=1"}''. This introduces an unnoticeable
+decrease in performance but helps save some 30kB more. This is
+the final situation, as it appears in @file{/proc/kmsg}. 
+
+@example
+  Linux version 2.4.18 (rubini@@ostro) (gcc version 2.95.4 ...
+  Calibrating delay loop... 49.02 BogoMIPS
+  Memory: 6644k/8192k available
+        (643k kernel code, 1160k reserved,
+                            157k data, 48k init, 0k highmem)
+@end example
+
+As an aside, that very host is currently running Debian Woody via
+NFS-root.
+
+As far as kernel patches are concerned, the same patches seen for 2.0 
+also apply to 2.4, with the following changes:
+
+@itemize @bullet
+@item
+	@code{CONFIG_ETLINUX_IOTABLE} is no more configurable, 
+        since 2.4 kernels do a dynamic allocation of the memory needed 
+        to store information about ioport regions.
+@item
+	@code{CONFIG_ETLINUX_REQ} is no more configurable, since the 
+        the @code{struct request} queue is dynamically allocated by the 
+        kernel.
+@item   
+        @code{CONFIG_ETLINUX_LOGBUF} is no more configurable since
+        2.4.23 where CONFIG_LOG_BUF_SHIFT has been introduced (this of
+        course only applies to 2.4.23).
+        
+@end itemize
+
+Nothing special is needed to compile 2.4, the usual ``@code{make
+bzImage}'' will work using the default compiler.
+We don't plan to distribute a patch to reduce the size of such
+a kernel. If you need a smaller kernel you'd better run 2.2 if possible.
+
+Selecting a different compiler with 2.4 is simpler than with 2.2 and 2.0:
+you just need to state its name without options: ``@code{make bzImage
+CC=this-gcc}''.
+
+
+@c ########################################################################
+@node    A new competitor in the embedded systems arena,  , Kernels, Top
+@chapter A new competitor in the embedded systems arena
+
+@heading etlinux: A New Competitor in the Embedded Systems Arena
+
+This article has been written by Marco Pantaleoni
+(@t{panta@@elasticworld.org}) and appeared in the Linux & C. magazine June
+2000 issue.
+
+@c ------------------------------------------------------------------------
+@menu
+* Abstract::                    
+* Embedded Systems::            
+* Linux Makes Its Entrance::    
+* ETLinux::                     
+* Architecture and development on ETLinux::  
+* ETLinux package system::      
+* Future Developments ::        
+* Conclusions::                 
+* Resources::                   
+* Author::                      
+@end menu
+
+@node Abstract, Embedded Systems, A new competitor in the embedded systems arena, A new competitor in the embedded systems arena
+@section Abstract
+@comment  node-name,  next,  previous,  up@c ======================================================================
+
+
+@c ======================================================================
+@node   Embedded Systems, Linux Makes Its Entrance, Abstract, A new competitor in the embedded systems arena
+@section Embedded Systems
+
+Many readers are most likely already familiar with Moore's law.  In the
+60ies, Gordon Moore predicted that the level of integration of
+transistors on silicon wafers would double ever year.  In other words,
+every year, the industry would be able to double the amount of
+transistors on a 1 cm chip with respect to the previous year - an
+exponential rate of growth.  Incredibly, this law is still valid today,
+even though the time span is now considered to be 18 months. At the same
+time, the price of chips has diminished at an equally exponential rate.
+This unstoppable growth has allowed @emph{general purpose} computers to
+take the place of special, customized electronics, which is advantageous
+in several ways: it reduces the Time To Market (an expression near and
+dear to management, which indicates the time between the conception of
+an idea and its launch on the market), and at the same time lowering the
+risk and cost of development.  Recent cellular phones offer an example
+of this: using a microprocessor-based system allows the manufacturer to
+offer useful features such as phonebooks, agendas, and more and more
+often, applications such as web browsers.  At the same time, it is
+possible to diversify the product by changing, a part from the price,
+just the software (and possibly the plastic case...).  It is impossible
+at this point to not note that the attention is shifting from the
+hardware to the software, which is becoming the true protagonist of new
+embedded systems.  This easily explains the growing interest in a market
+sector that was untill recently considered a niche: Embedded Operating
+Systems.  For any program of a certain complexity, it is necessary to
+have a tried and true base platform, in order to be able to concentrate
+on a higher level of abstraction, removed from matters such as memory
+management, or interaction with the hardware.  This affermation
+shouldn't be misconstrued, however, as embedded systems have existed for
+a long time: that which is changing is the level of abstraction that
+they offer.  The computing power available today has quite notably made
+more subtle the difference between embedded operating systems, and those
+which were traditionally found only on workstations.
+
+@c ======================================================================
+@node   Linux Makes Its Entrance, ETLinux, Embedded Systems, A new competitor in the embedded systems arena
+@section  Linux Makes Its Entrance
+
+It is at this point that the curtain opens on a new competitor in the
+arena of operating systems: Linux.  The availability of the
+above-mentioned resources, together with the philosophy of Open Source
+make for a timely mix, that has rejuvenated the Unix revolution, begun
+some 20 odd years ago.  The idea of unix on an embedded system ought to
+have purveyors of proprietary systems "quaking in their
+boots", particularly if the Unix in question is Linux.  We will see
+right away the reasons. In the first place, the availability of source
+code is of immeasurable value for those who develop embedded
+applications: it means not trusting one's business in the hands of
+another company (think of the economic losses sustained by those who
+were dependent on proprietary software afflicted with the Y2K bug,
+produced by software companies which had failed years before).
+Secondly, the stability of Linux is another fundamental attraction: can
+you imagine the consequences of a "blue screen" on an medical
+device?  Third, Linux is a complete operating system: it offers all of
+the typical unix services, and more: preemptive multitasking,
+multi-threading, memory management with seperate and protected
+addressing, shared memory, inter-process communication, networking,
+uniform management of peripherals, multiple file systems, dynamic
+loading of device drivers, standards compliance...  We also mustn't fail
+to underestimate the value of the enormous amount of software available
+in source form (programs, libraries, languages, compilers, debuggers,
+...), that can increase a developer's productivity.  Finally, one must
+consider that using a traditional platform obviates long periods of
+study.  And if one also notes that in all this discussion, the term
+'royalty' never comes up...
+
+@c ======================================================================
+@node   ETLinux, Architecture and development on ETLinux, Linux Makes Its Entrance, A new competitor in the embedded systems arena
+@section  ETLinux
+
+That which is described above is the panorama within which the creation
+of @strong{etlinux} is set. @strong{etlinux} is a project brought to
+fruition by Prosa (acquired by Linuxcare, and now Linuxcare Italia), a
+firm that developed developed and supported only Open Source solutions,
+with the goal of demostrating the utility of Linux on systems of modest
+power.  At the moment, to run @strong{etlinux}, all that is necessary are:
+386SX processor, 2 megs of ram, and 2 megs of disk space (and both
+normal hard drives and the more compact flash disks or disk-on-chip's
+will work).  In this configuration a Tcl interpreter, a small mail
+server, and an equally small web server are all included. An embedded
+system has special needs, very different from those of a desktop system.
+The development of @strong{etlinux} reflects these needs, and it is
+informative to examine the solutions utilized.  The availability of
+source code proves to be quite useful also from the student's point of
+view.
+
+@c ======================================================================
+@node   Architecture and development on ETLinux, ETLinux package system, ETLinux, A new competitor in the embedded systems arena
+@section Architecture and development on ETLinux
+
+For our discussion, we will make use of the 1.1 version of
+@strong{etlinux} (at the moment under development towards 1.2), based on
+libc5, as this C library most accurately reflects the initial design
+decisions, and also because it is still the best version if one wants to
+obtain the maximum resource savings.  In any case, the general
+architecture discussed is still valid (in version 1.2 the principal
+innovations regard the C library, updated to glibc2).  The kernel used
+is 2.0.38, with a variety of modifications introduced to reduce the
+memory footprint.  The changes made may be enabled/disabled by means of
+the normal kernel configuration mechanism.  The operations regard, on
+one hand, reducing the sizes of several kernel data structures, and the
+other, the removal of inessential systems.  For example; the number of
+filesystems that may be mounted at the same time has been reduced by
+changing the constant NR_SUPER from 64 to 4 in include/linux/fs.h, the
+number of character and block devices was lowered, only the first four
+serial ports are available, the size of the kernel message buffer was
+cut, and the maximum number of concurrent tasks reduced to 32 from 512
+(NR_TASKS in include/linux/tasks.h).  Many other modifications of this
+nature were performed, but the largest savings was obtained by removing
+the video console, with a savings of around 90 KB.  Miquel van
+Smoorenburg's serial console patch has also been applied (an almost
+universally adopted solution in the embedded world).  The memory savings
+obtained by working on the kernel, even though noteworthy, only pertain,
+however, to one part of the system.  It is, infact, possible to work on
+the adaptation of base applications (@t{init}, @t{mount}, @t{ifconfig},
+...) with excellent results.  All these programs are written for use on
+desktops and servers, and as a consequence include much more
+functionality and options than are actually necessary in an embedded
+system.  Furthermore, one needs to keep in mind that in the binary file
+that constitutes an ELF executable, there is a very complex header,
+which has the delicate responsibility of preparing the operating
+environment before passing effective control to the @emph{main}
+function.  Every executable file carries a copy of this information, and
+because of this, these headers are duplicated many times, occupying
+precious disk space (above all if the disk is a 2MB flash disk).
+Consider, for example, that for a program such as the classic "Hello
+World", which has several hundred bytes of code, the smallest executable
+obtainable with @t{gcc} occupies about 2.5 KB, for an overhead of about
+2.4 KB, or more, in real-world programs.  Whence the fundamental idea
+behind @strong{etlinux}: to use an interpreted language as a "motor"; it
+is possible in this way to globalize basic functionality in the
+executable of the interpreter, making it available as primitives of the
+language, and using scripts as applications.  For @strong{etlinux}, the
+choice of the language fell to @strong{Tcl}, a scripting language
+developed by John Ousterhout (1), which is exceptionally easy to learn,
+and easily extensible through it's C API.  The idea of centralizing
+functionality within an interpreter is hardly new - actually, it is at
+the heart of the history of Unix: think of the shell, which is nothing
+more than an interpreter.  The originality of our approach lies in the
+utilization of a general-purpose language, much more powerful than a
+common shell, and in a higher level of integration of the commands.  For
+example, we integrated commands such as: @t{mount}, @t{ifconfig},
+@t{route}, @t{uudecode}, @t{uuencode}, into the Tcl interpreter ... in
+addition to having made available many <system calls> like @t{dup},
+@t{fork}, @t{exec}, @t{wait}, @t{kill}, @t{pipe}, @t{nice}, @t{reboot},
+@t{sync}, @t{chmod}, @t{umask}, @t{mknod}. The integration of the system
+calls makes it possible to write many programs which were traditionally
+written in C, in Tcl ; maybe the most representative example of this
+strategy is the implementation of @t{init} in Tcl.  @t{Init} is the
+first user-space process to be launched at boot time on a Unix machine,
+and it is responsible for the creation of all the successive processes
+(daemons, shells, ...).  The Tcl version of @t{init} used in
+@strong{etlinux} occupies only 3705 bytes, slightly more than an ELF
+header alone.  Other applications that demonstrate the efficiency of
+this approach are the web server (3236 bytes, with support for Tcl CGI's
+and IP based access control), and the mail (SMTP) server (4841
+bytes).
+
+It is interesting to note how the utilization of an interpreter presents
+new opportunities for optimization: for example, when it's necessary to
+create a new process to execute a Tcl script, it's possibly to avoid the
+use of the classic pair of system calls @t{fork} and @t{exec} (where
+the first creates a copy of the current process, and the second replaces
+the image with that of a new executable), which are used by the shell,
+for instance, to execute the user's commands. This is done by taking
+advantage of the interpreter's ability to execute a script from a file
+(command @t{source}), naturally, after having created a new process
+with @t{fork}.  This method has the advantage of not loading the
+interpreter a second time, saving memory and processor time.  The memory
+savings is derived from the initial sharing of all pages of memory, even
+those for data, that are of the type @emph{copy-on-write} (several
+kernel tables which are different from process to process aren't
+shared), whereas with @t{exec} only those pages relative to the
+code, and the data pages would be created in memory again.  The higher
+execution speed is instead derived from avoiding the overhead in
+@t{exec} and of the initilization performed by the executable.  This
+technique is used throughout the system.  The increase in performance is
+significantly represented by its use in the web server for the CGI's
+written in Tcl: the execution time of a simple CGI which otherwise took
+roughly 2 seconds, was reduced to almost nothing (386SX with 2 MB of
+RAM).
+
+It is necessary to keep in mind that having an interpreted language also
+allows rapid prototyping, and easy customization of
+applications. Infact, it is very simple to add new functionality to
+@t{init} or the web server, which would otherwise be very laborious.  We
+feel that the ability to customize the system in a short period of time
+is a critical feature of an embedded operating system.
+
+@c ======================================================================
+@node   ETLinux package system, Future Developments , Architecture and development on ETLinux, A new competitor in the embedded systems arena
+@section ETLinux package system
+
+It is exactly with the extensibility and ease of creating customized
+versions of the system in mind, that another central component of
+@strong{etlinux} was developed: automatic packages management.  The
+package mechanism makes it possible to choose which components to
+include in the final operating system. For example, it's possible to
+choose whether or not to include a shell, the web server, or any other
+element.  The entire system is based on the use of suitable
+@emph{Makefiles} and standard unix commands, like @t{make},
+@t{sed}, @t{grep}, ...  In any case, the user doesn't have to
+deal with any details: all that's necessary is to edit a text file,
+specifying which packages to include, and to type the command
+@t{make}.  This will automatically create a directory tree which
+reflects the final filesystem of ETLinux.  All that remains is to
+transfer the created directory, with its subdirectories, to the disk (or
+to the Disk On Chip) of the embedded system, and it will be ready to
+boot!  This system is very flexible, as modifications may be made to the
+sources of the packages, or new packages may be added.  Furthermore, it
+is possible to keep the largest packages, like libc, precompiled, in
+order to avoid excessive waiting for compiles.
+
+@c ======================================================================
+@node   Future Developments , Conclusions, ETLinux package system, A new competitor in the embedded systems arena
+@section   Future Developments 
+
+@strong{etlinux} is a constantly evolving platform.  As previously
+mentioned, a version which utilizes GNU glibc 2.1.2 is under
+development, which will allow the productive use of @emph{multi
+threaded} programs.  At the same time, to enable the development of
+distributed applications, CORBA support has also been included.  There
+are a variety of other new things in the works, all with the goal of
+making @strong{etlinux} the platform of choice for developing embedded
+systems on Linux.
+
+@c ======================================================================
+@node   Conclusions, Resources, Future Developments , A new competitor in the embedded systems arena
+@section Conclusions
+
+The principal objection that has always been raised against Open Source
+by businesses, the lack of rapid and qualified technical support, has
+been demonstrated to be completely unfounded.  Infact, the number of
+organizations that offer commercial support at all levels is growing.
+The advantages of adopting a free platform such as Linux, are by now so
+obvious that it isn't difficult to foresee that this expanding
+phenomenon is destined to gain an ever more substantial share of the
+market. @strong{etlinux} is an attempt to bring to fruition the benefits
+of Linux and Open Source software in the embedded systems space.
+
+@c ======================================================================
+@node   Resources, Author, Conclusions, A new competitor in the embedded systems arena
+@section Resources
+
+For @strong{etlinux}:
+
+@itemize @bullet
+@item http://www.linuxcare.it/
+@item ftp://ftp.linuxcare.it/pub/etlinux
+
+@end itemize
+
+For @strong{Tcl}:
+
+@itemize @bullet
+@item http://dev.scriptics.com/
+@item Tcl and the Tk Toolkit, by John Ousterhout, Addison-Wesley, 1994,
+ISBN 0-201-63337-X
+@end itemize
+
+@c ======================================================================
+@node   Author,  , Resources, A new competitor in the embedded systems arena
+@section Author
+
+Marco Pantaleoni collaborates with Linuxcare Italia (formerly Prosa SrL)
+in the area of embedded systems.  In his free time, he works on the
+development of VHLL interpreted languages such as elastiC
+(http://www.elasticworld.org). He may be reached at
+@t{panta@@elasticworld.org}.
+
+@contents
+@bye
+
+@c Local Variables:
+@c mode: flyspell
+@c mode: font-lock
+@c End:
+
+@c  LocalWords:  etlinux texinfo etlinuxdoc iftex ifinfo etver devel embeddable
+@c  LocalWords:  alessandro rubini prosa filll flyspell LocalWords linux Lilo
+@c  LocalWords:  titlepage EtLinux modutils filesystem GRand BIOS netboot glibc
+@c  LocalWords:  PXEboot bootp diskless bzImage nfsroot giuda tftpboot ettcl
+@c  LocalWords:  configfile libpthreads CORBA Libre EtTcl sourceforge config
+@c  LocalWords:  umount ifconfig busybox configs ROMFS libc uclibc Debian utils
+@c  LocalWords:  nosource SOURCEDIR html binutils symlink filesystems init sudo
+@c  LocalWords:  highmem fastdep unnoticeable BogoMIPS TARGETSYSTEM PLATFORMPKG
+@c  LocalWords:  tarball telnetd checkplatform Ehlper ramdisk ostro kbogoMips
+@c  LocalWords:  povero ldconfig PowerPC sbin depmod untar mkfs fakeroot httpd
+@c  LocalWords:  chown chroot cmdd tftp runcustom kernelmodules StrongARM
+@c  LocalWords:  stripall gdbserver cardmgr backport pcmcia proc mtab assabet
+@c  LocalWords:  precompiled tmpfs gzipped TARFILE chmod ettclsh mkdep
+@c  LocalWords:  LOGBUF MAJBLK MAJCHR struct VTNR IOTABLE ioport NOFPU
+@c  LocalWords:  memmon zImage udplogs printk logfile insmod symlinking
+@c  LocalWords:  kmsg libtermcap endian FIXME misc crond fileutils mknod
+@c  LocalWords:  zcat respawn rmmod lsmod modprobe ncurses libncurses rootfs
+@c  LocalWords:  procps NetKit netstat netfiles inetd conf nsswitch gzip cgis
+@c  LocalWords:  basename expr stty uname libtermcap textutils mingetty
+@c  LocalWords:  util passwd kbdrate fdisk rdev elvis rmdir armboot ppcboot
+@c  LocalWords:  redboot cgidemo lilo Uboot
+
+

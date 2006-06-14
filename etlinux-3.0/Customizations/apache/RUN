@@ -1,0 +1,37 @@
+# Add apache files, customize apache config file, create document root
+# set -x
+
+echo "www-data:x:33:33:www-data:/var/www:/bin/sh" >> etc/passwd
+echo "www-data:x:33:" >> etc/group
+
+conf_tmpl=etc/apache/apache.conf.tmpl
+conf=etc/apache/apache.conf
+
+# Set up server name, server admin and document root
+[ "$APACHE_SERVER_NAME" = "" ] && \
+{ echo "Warning. No server name defined. Using localhost" ; \
+  APACHE_SERVER_NAME=localhost ; }
+[ "$APACHE_SERVER_ADMIN" = "" ] && \
+{ echo "Warning. No server admin defined. Using root" ; \
+  APACHE_SERVER_ADMIN=root ; }
+[ "$APACHE_DOCUMENT_ROOT" = "" ] && \
+{ echo "Warning. No document root defined. Using /home/www" ; \
+  APACHE_DOCUMENT_ROOT=/home/www ; }
+
+mkdir -p ./$APACHE_DOCUMENT_ROOT
+cp ../Etlinux.html ./$APACHE_DOCUMENT_ROOT
+
+APACHE_DOCUMENT_ROOT=`echo $APACHE_DOCUMENT_ROOT | sed -e 's/\//\\\\\\//g'`
+
+sed -e "s/^ServerName.*$/ServerName $APACHE_SERVER_NAME/" \
+-e "s/^ServerAdmin.*$/ServerAdmin $APACHE_SERVER_ADMIN/" \
+-e "s/^DocumentRoot.*$/DocumentRoot $APACHE_DOCUMENT_ROOT/" \
+$conf_tmpl > $conf 
+
+echo "Removing template file on target $conf_tmpl"
+rm $conf_tmpl 
+
+# symlink conf and mime.type
+install -d etc/apache
+(cd etc/apache && ln -n -f -s . conf)
+(cd etc/apache && ln -f -s ../mime.types) 

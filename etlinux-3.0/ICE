@@ -1,0 +1,1327 @@
+#!/bin/sh
+# Hi, emacs, this is -*-tcl-*-
+#
+# EtLinux ICE (interactive compilation ehlper)
+#
+#    Copyright (C) 2002, Alessandro Rubini <rubini@linux.it>
+#
+# Minor parts are:
+#    Copyright (C) 2002, Paolo Andreetto - paolo@prosa.it
+#    Copyright (C) 2002, Prosa Progettazione Sviluppo Aperto - info@prosa.it
+#                          
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+##############################################################################
+# Use the wrapper to find wish \
+exec wish $0 "$@"
+
+
+################ TODO
+###### handle customizations
+###### run make via individual package selections
+###### sort packages to match requirements
+###### checkbutton coloring doesn't work with multiple-compilations
+
+# allow a restart via "source ICE"
+catch {eval destroy [winfo children .]}
+catch {eval unset c g}
+
+# force c and g into arrays
+set c(dummy) [set g(dummy) ""]
+
+# Check if we can think we're root (fakeroot)
+set g(ithinkiamroot) [expr [exec id -u]==0]
+
+# Initialize g(new_config)
+set g(new_config) 0
+
+# Initialize g(preselectpackages)
+set g(preselectpackages) ""
+
+# Initialize g(builddir)
+set g(builddir) [ pwd ]
+
+##############################################################################
+##############################################################################
+######################### Now procedures, procedures procedures
+
+##############################################################################
+# Generic helpers
+
+# A procedure to set defaults (from ettcl::init.tcl)
+proc iceDefault {name value} {
+    global c
+    if ![info exists c($name)] {set c($name) $value}
+}
+
+# Message handling must be first, so they can be displayed later
+proc iceMessage {txt args} {
+    global c g env
+    set msg "[clock format [clock seconds] -format {%Y-%m-%d %H:%M:%S}] $txt"
+    puts stderr $msg
+    if [info exists g(msgwin)] {
+	$g(msgwin) insert end "$msg\n"
+	$g(msgwin) yview end
+    } else {
+	lappend g(msgbuf) $msg
+    }
+    if [llength $args] {iceInsertText $args $msg}
+}
+
+# the locked button is highlighted and ignored by Scandir
+proc iceLockButtonInit {} {
+    global g
+    set g(locked) ""
+}
+proc iceLockButton {button} {
+    global c g
+    if ![string compare $g(locked) $button] return
+    if [string length $g(locked)] {
+	eval $g(locked) configure $c(unlockedconfig)
+    }
+    set g(locked) $button
+    if [string length $g(locked)] {
+	eval $g(locked) configure $c(lockedconfig)
+	#. config -cursor watch
+    } else {
+	#. config -cursor ""
+    }	
+    iceRescandir
+}
+
+# retrieve what is the source for each package, and dependencies too
+proc iceScandirInit {} {
+    global c g
+    for {set num 0} {$num < $g(npkg)} {incr num} {
+	set name $g(pkg:$num)
+	set g(pkg:$num:file:unp) $name
+	set g(pkg:$num:file:bui) $g(builddir)/tmp/$name.built
+	set g(pkg:$num:file:bin) $name.bin
+	set g(pkg:$num:requires) ""
+	catch {unset g(pkg:$num:provides)}
+	# replace "unp" if a different source is specified
+	set F [open $c(src)/$name.build]
+	set line 0
+	while {[gets $F string]>=0 && $line<20} {
+	    incr line
+	    if [regexp {^source: *([^ 	]*)} $string dummy res] {
+		if [file exists $c(src)/$res.tar.gz] {
+		    set g(pkg:$num:file:unp) $res
+		} else {
+		    # add version number... hmm... (see tools/getsource)
+		    set srcfile [file tail [lindex [lsort \
+			    [glob $c(src)/$res-\[0-9\]*.tar.gz \
+			          $c(src)/$res\[0-9\]*.tar.gz]] end]]
+		    regsub ".tar.gz$" $srcfile ""  g(pkg:$num:file:unp) 
+		}
+	    }
+	    if [regexp {^requires: *(.*)$} $string dummy res] {
+		lappend g(pkg:$num:requires) $res
+	    }
+	    if [regexp {^provides: *(.*)$} $string dummy res] {
+		lappend g(pkg:$num:provides) $res
+	    }
+	}
+	close $F
+	# default "provides" for packages missing it
+	# the version is at least two chars in [0-9.] and then anything
+	if ![info exists g(pkg:$num:provides)] {
+	    regsub -- {-?[0-9][0-9.].*$} $name "" g(pkg:$num:provides)
+	}
+	if [lsearch -exact $g(pkg:$num:provides) $name]<0 {
+	    lappend g(pkg:$num:provides) $name
+	}
+	if [lsearch -exact $g(pkg:$num:provides) libc]<0 {
+	    lappend g(pkg:$num:requires) libc
+	}
+	#iceMessage "package $name provides \"$g(pkg:$num:provides)\""	    
+	#iceMessage "package $name requires \"$g(pkg:$num:requires)\""	    
+    }
+}
+
+# Initialize platforms
+proc icePlatformsInit {} {
+    global c g
+    iceScanPlatforms
+    icePlatformPreselectPackages $c(curr_platform)
+}
+
+# Scan platforms
+# Determine which packages have to be pre-selected when a 
+# given platform is loaded
+proc iceScanPlatforms {} {
+    global c g
+    foreach n [lsort -dictionary [glob $c(src)/Platforms/*]] {
+	set F [open $c(src)/Platforms/$c(curr_platform) r]
+	while {[gets $F string]>=0 } {
+	    if [ regexp "PLATFORMPKG[ ]*:?=[ ]*(.*)" $string dummy pkgs] { 
+		lappend g(preselectpackages) $pkgs
+		break
+	    }
+	}
+	close $F
+    }
+}
+
+# Initialize configurations
+proc iceConfigsInit {} {
+    global c g
+    iceScanConfigs 
+    iceDoOpenConfig $c(curr_config)
+    set g(curr_config_modified) 0
+    set g(new_cfg_index) 0
+    iceUseDependencies
+}
+
+
+# Scan configurations 
+proc iceScanConfigs {} {
+    global c g
+    set dummy ""
+    set pkg ""
+    set config ""
+    set ettcl_listed 0
+    foreach n [lsort -dictionary [glob $c(src)/Configs/*]] {
+	regsub {.*\/Configs\/} $n "" n
+	regsub CVS $n "" n
+	if [ file isdirectory $c(src)/Configs/$n  ] { continue }
+	set F [open $c(src)/Configs/$n]
+	set pkgn_config 0
+	while {[gets $F string]>=0} {
+	    if [regexp {^\#.*} $string ] { continue }
+	    if ![regexp {package[ ]*=[ ]*([^ ]*)} $string dummy pkg] \
+		    {continue}
+	    if { $pkgn_config == 0 } { lappend g(configs) $n }
+	    incr pkgn_config
+	    lappend g(config:$n) $pkg
+	}
+	close $F
+    }
+    puts "Available configurations:\n"
+    foreach cfg [lsort $g(configs)] {
+	puts "\n$cfg:"
+	foreach p [lsort $g(config:$cfg)] {
+	    puts "\t$p"
+	}
+    }
+}
+
+
+# enable or disable buttons according to dependencies
+proc iceUseDependencies {} {
+    global c g
+    # first pass: see what we have
+    set have [set must ""]
+    for {set num 0} {$num < $g(npkg)} {incr num} {
+	if $g(pkg:$num:sel) {
+	    eval lappend have $g(pkg:$num:provides)
+	    eval lappend must $g(pkg:$num:requires)
+	}
+    }
+    # second pass, calculate what can be changed
+    for {set num 0} {$num < $g(npkg)} {incr num} {
+	if $g(pkg:$num:sel) {
+	    set ena iceEnable
+	    # this can be disabled if nobody requires it
+	    # (libc and ettcl are special, nobody requires them)
+	    foreach n $g(pkg:$num:provides) {
+		if [lsearch -exact $must $n]>=0 {
+		    set ena iceDisable; break
+		}
+	    }
+	    $ena .f.sel$num
+	} else {
+	    set ena iceEnable
+	    # this can be disabled if it conflicts with selected stuff
+	    # or if it requires not-selected stuff
+	    foreach n $g(pkg:$num:provides) {
+		if [lsearch -exact $have $n]>=0 {
+		    set ena iceDisable; break
+		}
+	    }
+	    foreach n $g(pkg:$num:requires) {
+		if [lsearch -exact $have $n]<0 {
+		    set ena iceDisable; break
+		}
+	    }
+	    $ena .f.sel$num
+	}
+    }
+}
+
+
+# a procedure to scan all packages and set/unset buttons
+proc iceScandir {} {
+    global c g
+    for {set num 0} {$num < $g(npkg)} {incr num} {
+	foreach {what} {unp bui bin} {
+	    # a button is locked if in-change
+	    if {"$g(locked)"==".f.$what$num"} continue
+	    set g(pkg:$num:$what) [file exists $g(pkg:$num:file:$what)]
+	}
+    }
+    set g(scanid) [after $c(scaninterval) iceScandir]
+}
+
+# scan it now
+proc iceRescandir {} {
+    global c g
+    after cancel $g(scanid)
+    iceScandir
+}
+
+# enable/disable "sel" buttons
+proc iceEnable {button} {
+    global c g
+    $button config -state normal -background $c(selbutton:bg)
+}
+proc iceDisable {button} {
+    global c g
+    $button config -state disabled -background $c(selbutton:disabledbg)
+}
+
+##############################################################################
+# Stuff invoked from the menubar
+
+proc __internalTrace {var n operation} {
+    global $var save
+    set t .$var.t
+
+    #puts stderr [list TRACE $var $n $operation]
+
+    if [info exists save($var:value:$n)] {
+	set line $save($var:line:$n)
+	if ![string compare $operation "w"] {
+	    # udate..
+	    regsub -all "\n" [set ${var}($n)] "\\n" val
+	    if ![string compare $save($var:value:$n) $val] return
+	    $t delete $line.0 $line.end
+	    $t insert $line.0 "$n = " newelement "$val" newvalue
+	    set save($var:value:$n) $val
+	    return
+	}
+	# unset
+	$t delete $line.0 $line.end
+	$t insert $line.0 "$n = UNSET" newelement
+	return
+    }
+    # create an entry
+    set line $save($var:nlines); incr save($var:nlines)
+    regsub -all "\n" [set ${var}($n)] "\\n" val
+    $t insert $line.0 "$n = " newelement "$val\n" newvalue
+}   
+
+proc iceTrace {var title} {
+    global c g env save
+    if [winfo exists .$var] {
+	destroy .$var
+	#wm deiconify .$var; raise .$var; return
+    }
+    set name .$var; set t $name.t
+    iceToplevel $name $title diag
+    wm deiconify $name
+    $t tag configure element -foreground $c(arrayelement)
+    $t tag configure value -foreground $c(arrayvalue)
+    $t tag configure newelement -foreground $c(arraynewelement)
+    $t tag configure newvalue -foreground $c(arraynewvalue)
+    
+    set line 0
+    foreach n [lsort -dictionary [array names $var]] {
+	regsub -all "\n" [set ${var}($n)] "\\n" val
+	$name.t insert $line.0 "$n = " element "$val\n" value
+	set save($var:line:$n)  $line
+	set save($var:value:$n)  $val
+	incr line
+    }
+    set save($var:nlines) $line
+    trace variable $var wu __internalTrace
+}
+proc iceClose.c {} {global c; trace vdelete c wu __internalTrace}
+proc iceClose.g {} {global g; trace vdelete g wu __internalTrace}
+proc iceClose.env {} {global env; trace vdelete env wu __internalTrace}
+
+proc icePreferences {} {
+    global g c
+    if [winfo exists .prefs] {
+	destroy .prefs
+    }
+    # use iceToplevel but don't use the text+scrollbar
+    iceToplevel .prefs "Preferences" pref
+    destroy .prefs.t .prefs.scroll
+    foreach {name string} {
+	ask:unp:1 "Ask for confirmation before untarring"
+	ask:bui:1 "Ask for confirmation before buiding"
+	ask:bin:1 "Ask for confirmation before creating .bin"
+	sep       ""
+	ask:unp:0 "Ask for confirmation before deleting untarred"
+	ask:bui:0 "Ask for confirmation before deleting built"
+	ask:bin:0 "Ask for confirmation before deleting .bin"
+	sep2      ""
+	multicompile "Allow several compilations at once"
+	sep3      ""
+	autosudo  "Run sudo when needed, don't ask at startup"
+    } {
+	if [string length $string] {
+	    pack [checkbutton .prefs.$name -variable c($name) -text $string] \
+		    -anchor w
+	} else {
+	    pack [frame .prefs.$name -height 10]
+	}
+    }
+    pack [button .prefs.ok -text "Ok" -command "destroy .prefs"]
+    wm deiconify .prefs
+}
+
+# Confirm quit
+proc iceConfirmQuit {} {
+    global g c
+    set res [tk_dialog .quit "Confirm quit" "Really quit?" "" 0 \
+	    "Quit and save configuration" \
+	    "Quit and discard configuration" \
+	    "Cancel quitting"]
+    if $res==2 return
+    if $res==0 {
+	set F [open ".etlinux-ice" w]
+	puts $F "# Automatically generated by ICE, at\
+		[clock format [clock seconds] -format {%Y-%m-%d %H:%M:%S}]"
+	foreach n [array names c] {
+	    puts $F [list iceDefault $n $c($n)]
+	}
+	close $F
+    }
+    exit 0
+}
+
+# Set up a new configuration
+proc iceNewConfig {} {
+    global c g
+    if {  $g(curr_config_modified) } {
+	# Configuration has been modified without being saved. 
+	if {![iceConfirmNewCfg]} { return }
+    }
+    # Assign "new_config_X" as the name of the new configuration
+    # The user will change it with "Save as"
+    incr g(new_cfg_index)
+    set cfg "new_config_$g(new_cfg_index)"
+    # Clone the new configuration from the old one
+    set g(config,$cfg) $g(config:$c(curr_config))
+    # No need to change package selections, since the new config 
+    # is just a clone !
+    # Now switch to the new configuration
+    set c(curr_config) $cfg
+    # Remember we're dealing with a new configuration
+    set g(new_config) 1
+}
+
+# Open a configuration: just look for its name, call the real open 
+# routine and calculate dependencies
+proc iceOpenConfig {} {
+    global c g
+    if {  $g(curr_config_modified) } {
+	# Configuration has been modified without being saved. 
+	if {![iceConfirmNewCfg]} { return }
+    }
+    set cfg [ tk_getOpenFile -initialdir $c(src)/Configs \
+		  -title "Open config" ]
+    if {$cfg == ""} { return }
+    regexp {.*\/([^\/]*)} $cfg dummy cfg
+    iceDoOpenConfig $cfg 
+    set c(curr_config) $cfg 
+} 
+
+# Open a registered configuration 
+proc iceDoOpenConfig {cfg} {
+    global c g
+    for { set n 0 } { $n < $g(npkg) } { incr n } {
+	regsub {\-[0-9]+\.[0-9]+.*} $g(pkg:$n) "" pkg_name
+	if { [lsearch  $g(config:$cfg) $pkg_name] != -1 } { 
+	    set g(pkg:$n:sel)  1
+	} else {
+	    set g(pkg:$n:sel)  0
+	}
+	iceUseDependencies 
+    }
+    set g(curr_config_modified) 0
+}
+
+# Save a configuration as a list of packages.
+proc iceSaveConfig {as} {
+    global c g
+    # Save as is invoked both when the user requires it and when 
+    # a new configuration has been set up
+    if {$as == 0 && $g(new_config)==0 } { 
+	set config $c(curr_config) 
+	lappend g(configs) $config
+    } else {
+	set config [ tk_getSaveFile -initialdir $c(src)/Configs \
+		  -initialfile $c(curr_config) -title "Save config as"]
+	if {$config == ""} { return }
+	regexp {.*\/([^\/]*)} $config dummy config
+    }
+    set F [open "$c(src)/Configs/$config" w]
+    puts $F "\#########################################"
+    puts $F "\# Automatically generated file\t\t#"
+    puts $F "\# Configuration: $config\t\t#"
+    puts $F "\#########################################"
+    puts $F "provides: etlinux"
+    for { set n 0 } { $n < $g(npkg) } { incr n } {
+	regsub {\-[0-9]+\.[0-9]+.*} $g(pkg:$n) "" pkg_name
+	if { $g(pkg:$n:sel)==1} {
+	    lappend g(config:$config) $pkg_name
+	    puts $F "package = $pkg_name"
+	}
+    }
+    close $F
+    set g(curr_config_modified) 0
+    set g(new_config) 0
+}
+
+# Confirm new configuration (invoked when configuration 
+# changes without being saved -
+proc iceConfirmNewCfg {} {
+    global g c
+    set res [tk_dialog .confnewcfg "Confirm config change" \
+	    "Current configuration has been changed without being saved" "" 0 \
+	    "Save current configuration" \
+	    "Discard changes" \
+	    "Cancel"]
+    if {$res==2} {return 0}
+    if {$res==0} {
+	iceSaveConfig 0
+    }
+    return 1
+}
+
+
+##############################################################################
+# Creating windows
+
+# Definition of what is in each menubar according to toplevel type
+# existing types are {main comp msg dep pref diag}
+set g(menudefs) {
+    {FileOpenSave.  main}
+    {FilePrefs.     main comp msg}
+    {FileClear.     comp msg}
+    {FileClose.     comp dep pref diag}
+    {FileQuit.      main pref}
+    {Diag.          main comp msg}
+    {Platform.      main}
+    {Run.           main comp}
+    {Refresh.       diag}
+}
+
+# The menubar (function shared by all toplevels)
+proc iceMenuBar {name type} {
+    global c g
+    menu $name -tearoff 0
+    [winfo parent $name] config -menu $name
+    menu [set m $name.file] -tearoff 0
+    $name add cascade -label "File" -underline 0 -menu $m
+
+    # add (or not add) items according to window type
+    set def [lindex $g(menudefs) [lsearch -glob $g(menudefs) FileOpenSave.*]]
+    if [lsearch -exact $def $type]>0 {
+	$m add command -label "New Config" -underline 0 \
+		-command "iceNewConfig"
+
+	$m add command -label "Open Config..." -underline 0 \
+		-command "iceOpenConfig"
+
+	$m add command -label "Save Config" -underline 0 \
+		-command "iceSaveConfig 0"
+
+	$m add command -label "Save Config As..." -underline 12 \
+		-command "iceSaveConfig 1"
+
+	$m add separator
+    }
+    set def [lindex $g(menudefs) [lsearch -glob $g(menudefs) FilePrefs.*]]
+    if [lsearch -exact $def $type]>0 {
+	$m add command -label "Preferences..." -underline 0 \
+		-command "icePreferences"
+	$m add separator
+    }
+
+    set def [lindex $g(menudefs) [lsearch -glob $g(menudefs) FileClear.*]]
+    if [lsearch -exact $def $type]>0 {
+	$m add command -label "Clear Text" -underline 6 \
+		-command "[winfo parent $name].t delete 0.0 end"
+    }
+    set def [lindex $g(menudefs) [lsearch -glob $g(menudefs) FileClose.*]]
+    if [lsearch -exact $def $type]>0 {
+	set p [winfo parent $name]
+	$m add command -label "Close" -underline 0 \
+		-command "catch {iceClose$p}; destroy $p"
+	# the iceClose$p above is to remove trace for diag windows
+    }
+    set def [lindex $g(menudefs) [lsearch -glob $g(menudefs) FileQuit.*]]
+    if [lsearch -exact $def $type]>0 {
+	$m add command -label "Quit" -underline 0 -command "iceConfirmQuit"
+    }
+
+    set def [lindex $g(menudefs) [lsearch -glob $g(menudefs) Diag.*]]
+    if [lsearch -exact $def $type]>0 {
+	menu [set m $name.diag] -tearoff 0
+	$name add cascade -label "Diagnostics" -underline 0 -menu $m
+	
+	$m add command -label "Trace Globals" -underline 6 \
+		-command "iceTrace g Globals"
+	$m add command -label "Trace Configuration" -underline 6 \
+		-command "iceTrace c Configuration"
+	$m add command -label "Trace Environment" -underline 6 \
+		-command "iceTrace env Environment"
+    }
+
+    set def [lindex $g(menudefs) [lsearch -glob $g(menudefs) Platform.*]]
+    if [lsearch -exact $def $type]>0 {
+	menu [set m $name.plat] -tearoff 0
+	$name add cascade -label "Platform" -underline 0 -menu $m
+	foreach n [lsort -dictionary [glob $c(src)/Platforms/*]] {
+	    if ![file isfile $n] continue
+	    set p [file tail $n]
+	    $m add radiobutton -label $p -variable c(curr_platform) -value $p
+	}
+    }
+
+    #FIXME: Run
+    #FIXME: refresh
+}    
+
+    
+
+# create a generic iconified window
+proc iceToplevel {name title type} {
+    global c g env
+    toplevel $name
+    iceMenuBar $name.bar $type
+    if [info exists c(width:$type)] {
+	pack [text $name.t -width $c(width:$type) -height $c(height:$type) \
+		-yscrollcommand "$name.scroll set"] \
+		-side left -expand y -fill both
+	pack [scrollbar $name.scroll -orient v -command "$name.t yview"] \
+		-expand y -fill y
+	# add tags to the text
+	foreach n [array names c tag:*] {
+	    regsub "^tag:" $n "" tagname
+	    eval $name.t tag configure $tagname $c($n)
+	}
+    }
+    wm title $name $title
+    wm iconify $name
+
+}
+
+# create a message window
+proc iceMessageWin name {
+    global c g env
+    iceToplevel $name "ICE Messages" msg
+    # fill it with older messages
+    set g(msgwin) $name.t
+    foreach msg $g(msgbuf) {
+	$g(msgwin) insert end "$msg\n"
+    }
+    set g(msgbuf) ""
+}
+
+# Deselect all packages
+proc iceClearAllPackages {} {
+    global g
+    for { set n 0 } { $n < $g(npkg) } { incr n } {
+	set g(pkg:$n:sel)  0
+    }
+}
+
+# Deselect all packages which have to be pre-selected when a given
+# configuration is loaded
+proc iceClearAllPreselectedPackages {}  {
+    global g
+    for { set n 0 } { $n < $g(npkg) } { incr n } {
+	if { [ lsearch -exact $g(preselectpackages)  $g(pkg:$n)] >= 0 } {
+	    set g(pkg:$n:sel)  0
+	}
+    }
+}
+
+# Clean up all, mark all packages as not built, not pre-installed 
+# and not utarred
+proc iceCleanCompiledPackages {} {
+    global c g 
+    for { set n 0 } { $n < $g(npkg) } { incr n } {
+	if { $g(pkg:$n:bui) } {
+	    iceMessage "Removing \"$g(pkg:$n:file:bui)\""
+	    iceCoprocess 0 "rm -rf $g(pkg:$n:file:bui)" \
+		".f.bui$n" $n .
+	}
+	if { $g(pkg:$n:bin) } {
+	    iceMessage "Removing \"$g(pkg:$n:file:bin)\""
+	    iceCoprocess 0 "rm -rf $g(pkg:$n:file:bin)" \
+		 ".f.bin$n" $n .
+	}
+	if { $g(pkg:$n:unp) } {
+	    iceMessage "Removing \"$g(pkg:$n:file:unp)\""
+	    iceCoprocess 0 "rm -rf $g(pkg:$n:file:unp)" \
+		 ".f.unp$n" $n .
+	}
+    }
+    iceMessage "Removing ./tmp/"
+    iceCoprocess 0 "rm -rf  ./tmp/" \
+	    "" 0 .
+}
+
+# Handle platform change
+# Ask the user whether she wants to clean compiled packages
+# Ask user to choose among the following:
+# - Keep current configuration and selected packages
+# - Open an existing configuration
+# - Set up a new configuration but keep currently selected packages
+# - Set up a new configuration and de-select all packages 
+proc icePlatformChange {} {
+    global c g
+    set choice [tk_dialog .pfdialog "Clean compiled packages" \
+	    "What shall I do ?" \
+	    "" 0 "Clean compiled packages (recommended)" \
+	    "Keep compiled packages" ]
+    if { $choice == 0 } { 
+	iceCleanCompiledPackages 
+	set dontkeep 1
+    } else {
+	set dontkeep 0
+    }
+    if { $dontkeep==0 } {
+	set choice [tk_dialog .pfdialog "Platform change" "What shall I do ?" \
+		"" 0 "Keep config and packages" \
+		"Open config" \
+		"New config" \
+		"New config and purge packages"]
+    } else {
+	set choice [tk_dialog .pfdialog "Platform change" "What shall I do ?" \
+		"" 0 \
+		"Open config" \
+		"New config" \
+		"New config and purge packages"]
+	incr choice
+    }
+    icePlatformPreselectPackages $c(curr_platform)
+    switch -exact -- $choice {
+	1 { iceOpenConfig }
+	2 { iceNewConfig }
+	3 { iceNewConfig ; iceClearAllPackages }
+	default { }
+    }
+}
+
+# Preselect platform packages
+proc icePlatformPreselectPackages {platform} {
+    global c g
+    set pkgs ""
+    iceClearAllPreselectedPackages
+    set F [open $c(src)/Platforms/$c(curr_platform) r]
+    while {[gets $F string]>=0 } {
+	if [ regexp "PLATFORMPKG[ ]*:?=[ ]*(.*)" $string dummy pkgs] { 
+	    break
+	}
+    }
+    close $F
+    if { $pkgs == "" } { return }
+    foreach pkg_name $pkgs {
+	for { set n 0 } { $n < $g(npkg) } { incr n } {
+	    regsub {\-[0-9]+\.[0-9]+.*} $pkg_name "" pkg_name
+	    if { $g(pkg:$n) == $pkg_name } { 
+		set g(pkg:$n:sel)  1
+	    } else {
+		set g(pkg:$n:sel)  0
+	    }
+	    iceUseDependencies 
+	}
+    }
+}
+
+# trace changes in c(curr_platform) to change window title
+proc __traceplat {var n op} {
+    global c env
+    if ![string compare op "u"] {
+	wm title . "Packages (no platform defined)"
+	return
+    }
+    if ![string length $c(curr_platform)] {
+	wm title . "Packages (no platform defined)"
+    } else {
+	wm title . "Packages for $c(curr_platform) - $c(curr_config)"
+	icePlatformChange
+	set  env(PLATFORM)  $c(curr_platform) 
+	puts $env(PLATFORM) 
+    }
+}
+
+# setup the main window, excluding the canvas
+proc iceSetupMain {} {
+    global c g env
+    wm title . "Packages $c(curr_platform) - $c(curr_config)"
+    ## trace c(curr_platform) so we can update the title
+    trace variable c(curr_platform) wu __traceplat
+ 
+    iceMenuBar .bar main
+    pack [frame .sep -background gray40 -height 5] -expand false -fill x
+    pack [set f [frame .heading -relief ridge -border 3]] -expand false -fill x
+    grid [label $f.sel -text "Use  "]             -row 0 -column 0
+    grid [label $f.unp -text "Untar  "]           -row 0 -column 1
+    grid [label $f.bui -text "Build  "]           -row 0 -column 2
+    grid [label $f.bin -text "Bin  "]             -row 0 -column 3
+    grid [label $f.name -text "    Package name"]   -row 0 -column 4 -sticky w
+    update
+
+    # For each .build file, create a frame
+    frame .f
+    set num 0
+    foreach n [lsort -dictionary [glob $c(src)/*.build]] {
+	regsub ".build$" [file tail $n] "" name
+	# ignore _base, _empty etc
+	if [regexp "^_" $name] continue
+	set g(pkg:$num) $name
+
+	grid [checkbutton .f.sel$num -variable g(pkg:$num:sel) \
+		-command "iceSelect .f.sel$num $num"] -column 0 -row $num \
+		-sticky nswe
+	.f.sel$num config -background $c(selbutton:bg) \
+		          -activebackground $c(selbutton:activebg)
+	                 #-disabledbackground $c(selbutton:disabledbg)
+	grid [checkbutton .f.unp$num -variable g(pkg:$num:unp) \
+		-command "iceUnpack .f.unp$num $num"] -column 1 -row $num \
+		-sticky nswe
+	grid [checkbutton .f.bui$num -variable g(pkg:$num:bui) \
+		-command "iceBuild .f.bui$num $num"] -column 2 -row $num \
+		-sticky nswe
+	grid [checkbutton .f.bin$num -variable g(pkg:$num:bin) \
+		-command "iceBin .f.bin$num $num"] -column 3 -row $num \
+		-sticky nswe
+	grid [label .f.name$num -text $name]  -column 4 -row $num -sticky w
+	grid [button .f.help$num -command "iceHelp $num" -text "?"] \
+		-column 4 -row $num -sticky nse
+	incr num
+    }
+    set g(npkg) $num
+
+    foreach {col name} {0 sel 1 unp 2 bui 3 bin} {
+	set g(wid:$name) [winfo width $f.$name]
+	grid columnconfigure .heading "$col" -minsize $g(wid:$name) -weight 0
+	grid columnconfigure .f       "$col" -minsize $g(wid:$name) -weight 0
+    }
+    grid columnconfigure .heading "4" -weight 10 -pad 20
+    grid columnconfigure .f       "4" -weight 10 -pad 20
+    grid columnconfigure .f       "5" -weight 0
+
+    # ask the size of this stuff
+
+    pack .f; update
+    set g(canvaswid) [winfo width .f]
+    set g(canvashei) [winfo height .f]
+    pack unpack .f
+
+    # create a scrollable canvas as the main widget
+    set hei $g(canvashei)
+    if $hei>$c(canvashei) {set hei $c(canvashei)}
+    pack [canvas .cnv -width $g(canvaswid) -height $hei \
+	    -yscrollcommand ".scroll set"] \
+	    -side left -expand y -fill both
+    pack [scrollbar .scroll -orient v -command ".cnv yview"] -expand y -fill y
+    .cnv create window 0 0 -anchor nw -window .f
+    .cnv config -scrollregion "0 0 $g(canvaswid) $g(canvashei)"
+    # to keep things the right way, lower .f and .cnv beneath it
+    lower .f; lower .cnv
+}
+
+##############################################################################
+### Support procedures used by main procedures defined later
+
+proc iceTestSudo {loop willfail toplevel} {
+    global c g
+
+    # Always OK if we're already root
+    if $g(ithinkiamroot) { return 0 }
+    # skip the initial test if we know it will fail; it would take a lot
+    if !$willfail {
+	update
+	if ![catch {exec sudo -S true < /dev/null >& /dev/null}] {
+	    return 0
+	}
+    }
+
+    scan [winfo geometry $toplevel] "%ix%i+%i+%i" wid hei x y
+    set wid [expr $wid/6 -7]
+    set hei [expr $hei/13 -8]
+    incr x 18
+    incr y 39
+    set res 0
+    $toplevel config -cursor watch; update
+    while 1 {
+	exec xterm -T "Please revalidate your password" -fn fixed \
+		-geometry ${wid}x${hei}+${x}+${y} -e sudo true
+	update; # the test can take several seconds, if it fails
+	after 200; update
+	if [catch {exec sudo -S true < /dev/null >& /dev/null}] {
+	    # error, not a valid password (or not in sudoers?)
+	    if !$loop {set res -1; break}
+	} else {
+	    break
+	}
+    }
+    $toplevel config -cursor ""; update
+    return $res
+}
+	
+
+    
+
+# name of action, button to select/deselect, 1 or 9, questions
+proc iceAsk {name button isset q1 q0} {
+    global c g
+    iceLockButton $button
+    if !$c(ask:$name:$isset) {return 1}
+    
+    if $isset {
+	set q $q1; set act deselect
+    } else {
+	set q $q0; set act select
+    }
+    set res [tk_dialog .dia "Confirm operation" $q "" \
+		0 "Confirm" "Cancel"]
+    if !$res {return 1}
+    $button $act; iceLockButton "";  return 0
+}
+
+proc iceInsertText {widget string} {
+    global c g
+    # look for matches to add a tag
+    set dotag ""
+    foreach n $c(regexps) {
+	foreach {exp tag} $c(regexp:$n) {
+	    if [regexp -- $exp $string nil] {
+		set dotag $tag
+	    }
+	}
+    }
+    $widget insert end "$string\n" $dotag
+    $widget yview end
+}    
+
+# what to do when a coprocess ends
+proc iceHandlerDone {file num top args} {
+    global c g
+    # report it's done
+    if [llength $args] {iceMessage "Done running \"[lindex $args 0]\"" $top.t}
+    # unlock (uncolor) the active button
+    iceLockButton ""
+    # re-enable buttons
+    if $num>=0 {
+	.f.unp$num config -state normal -cursor ""
+	.f.bui$num config -state normal -cursor ""
+	.f.bin$num config -state normal -cursor ""
+    } else {
+	for {set n 0} {$n < $g(npkg)} {incr n} {
+	    .f.unp$n config -state normal -cursor ""
+	    .f.bui$n config -state normal -cursor ""
+	    .f.bin$n config -state normal -cursor ""
+	}
+    }    
+    # close last, as it might spit an error
+    if [catch {close $file}] {
+	wm deiconify $top
+	raise $top
+	# FIXME: the checkbutton should note the error
+    }
+	
+}
+
+# the event handler for visible messages
+proc iceHandler1 {file num top command} {
+    global g c
+    if [gets $file string]>=0 {
+	if ![winfo exists $top.t] {
+	    if $num>=0 {
+		iceToplevel $top "Compilation for $g(pkg:$num)" comp
+	    } else {
+		iceToplevel $top "Compilation messages" comp
+	    }
+	}
+	iceInsertText $top.t $string
+	return
+    }
+    iceHandlerDone $file $num $top $command
+}
+
+# the event handler for invisible messages
+proc iceHandler0 {file num top command} {
+    global g c
+    if [gets $file string]>=0 {
+	return
+    }
+    iceHandlerDone $file $num $top
+}
+
+# running a coprocess
+proc iceCoprocess {visible cmdname buttontolock num toplevel} {
+    global c g
+    iceLockButton $buttontolock; # Hmm... button locking is obsolete?
+    set top ".out"; #default
+    if $num>=0 {
+	if $c(multicompile) {
+	    # name a toplevel for this compilation (created when we have data)
+	    set top .$g(pkg:$num)
+	    regsub -all "(.)\\." $top "\\1-" top
+	} else {
+	    set num -1; # disable all buttons and use default top
+	}
+    }
+    # spit a message in it, only if it's already existent
+    if {$visible && [winfo exists $top]} {
+	iceMessage "Running \"$cmdname\"" $top.t
+    } else {
+	iceMessage "Running \"$cmdname\""
+    }
+    # disable one or all button sets
+    if $num>=0 {
+	.f.unp$num config -state disabled -cursor watch
+	.f.bui$num config -state disabled -cursor watch
+	.f.bin$num config -state disabled -cursor watch
+    } else {
+	for {set n 0} {$n < $g(npkg)} {incr n} {
+	    .f.unp$n config -state disabled -cursor watch
+	    .f.bui$n config -state disabled -cursor watch
+	    .f.bin$n config -state disabled -cursor watch
+	}
+    }
+    # ask the passowrd again and again until sudo suceeds
+    iceTestSudo 1 0 $toplevel
+    # finally, run the command
+    # Use sudo if we're not root
+    if $g(ithinkiamroot) {
+	set use_sudo "|"
+    } else {
+	set use_sudo "|sudo"
+    }
+    set file [open "$use_sudo $cmdname |& cat" r]
+    fileevent $file readable "iceHandler$visible $file $num $top {$cmdname}"
+}
+
+##############################################################################
+### Procedures associated to checkbuttons
+proc iceSelect {button num} {
+    global c g env
+    set g(curr_config_modified) 1
+    iceUseDependencies
+}
+
+proc iceUnpack {button num} {
+    global c g env
+    set name $g(pkg:$num)
+    set act $g(pkg:$num:unp)
+    # the following locks the button
+    if ![iceAsk unp $button $act \
+	    "Really untar $name?" \
+	    "Really remove untarred source for $name?"] return
+
+    if $act {
+	set cmdname "make $g(builddir)/$g(pkg:$num:file:unp)"
+	iceMessage "Running \"$cmdname\""
+	iceCoprocess 1 $cmdname $button $num .
+    } else {
+	iceMessage "Removing \"$g(pkg:$num:file:unp)\""
+	iceCoprocess 0 "rm -rf $g(pkg:$num:file:unp) $g(pkg:$num:file:bui)" \
+		$button $num .
+    }
+}
+
+proc iceBuild {button num} {
+    global c g env
+    set name $g(pkg:$num)
+    set act $g(pkg:$num:bui)
+    # the following locks the button
+    if ![iceAsk bui $button $act \
+	    "Really build $name?" \
+	    "Really mark $name as not built?"] return
+
+    if $act {
+	set cmdname "make $g(pkg:$num:file:bui)"
+	iceMessage "Running \"$cmdname\""
+	iceCoprocess 1 $cmdname $button $num .
+    } else {
+	iceMessage "Removing \"$g(pkg:$num:file:bui)\""
+	iceCoprocess 0 "rm -f $g(pkg:$num:file:bui)" \
+		$button $num .
+    }
+}
+
+
+proc iceBin {button num} {
+    global c g env
+    set name $g(pkg:$num)
+    set act $g(pkg:$num:bin)
+    # the following locks the button
+    if ![iceAsk bin $button $act \
+	    "Really preinstall $name?" \
+	    "Really remove preinstallation of $name?"] return
+
+    if $act {
+	set cmdname "make $g(pkg:$num:file:bin)"
+	iceMessage "Running \"$cmdname\""
+	iceCoprocess 1 $cmdname $button $num .
+    } else {
+	iceMessage "Removing \"$g(pkg:$num:file:bin)\""
+	iceCoprocess 0 "rm -rf $g(pkg:$num:file:bin)" \
+		$button $num .
+    }
+}
+
+# and the help button
+proc iceHelp {mynum} {
+    global c g
+
+    set name $g(pkg:$mynum)
+    catch {destroy .dep}
+    iceToplevel .dep "Dependencies information for $name" dep
+    # say what we require and who provides it
+    foreach n $g(pkg:$mynum:requires) {
+	.dep.t insert end "\n$name requires $n\n"
+	for {set num 0} {$num < $g(npkg)} {incr num} {
+	    if $num==$mynum continue
+	    if [lsearch -exact $g(pkg:$num:provides) $n]>=0 {
+		.dep.t insert end "    $n is provided by $g(pkg:$num)\n"
+	    }
+	}
+    }
+    .dep.t insert end "\n\n"
+    # say what we provide and who requires it
+    foreach n $g(pkg:$mynum:provides) {
+	.dep.t insert end "\n$name provides $n\n"
+	for {set num 0} {$num < $g(npkg)} {incr num} {
+	    if $num==$mynum continue
+	    if [lsearch -exact $g(pkg:$num:requires) $n]>=0 {
+		.dep.t insert end "    $n is required by $g(pkg:$num)\n"
+	    }
+	}
+    }
+    wm deiconify .dep
+}
+
+##############################################################################
+### Initial setup, according to what's in this host and what's missing
+
+proc iceSystemConfig {} {
+    global c g env
+
+    # look if we have sudo
+    set sudo [file executable /usr/bin/sudo]
+    # look if we have tkinfo and the info file
+    set tkinfo [file executable /usr/bin/tkinfo]
+    set infofile [file readable $c(src)/doc/etlinux.info]
+
+    if {$g(ithinkiamroot) && $tkinfo && $infofile} return
+    if {$c(autosudo) && $tkinfo && $infofile} return
+
+    if {!$g(ithinkiamroot) && !$c(autosudo)} {
+	toplevel .sys
+	# warn about root
+	set text "You are not the superuser, but creating a target tree\
+	    requires superuser privileges.\nPlease choose how to\
+	    behave in this respect:"
+	#regsub {[ \t]+} $text " " text
+	pack [message .sys.mroot -text $text -relief ridge -aspect 550] \
+		-expand true -fill both  -padx 10 -pady 10
+	set buttons {
+	     0   1       "Don't run ICE at all, I'll re-run as root"
+	     1   !$sudo  "Don't run ICE now, I'll setup sudo first"
+	    10   $sudo   "Run sudo now and whenever the password is needed"
+	    20   $sudo   "Run sudo now, run \"sudo -v\" every minute"
+	}
+	set num 0
+	foreach {val cond text} $buttons {
+	    incr num
+	    pack [radiobutton .sys.b$num -variable g(root) -value $val \
+		-text $text -command ".sys.ok config -state normal"] -anchor w
+	    if [eval expr !$cond] {.sys.b$num config -state disabled}
+	    
+	}
+	pack [label .sys.msg -foreground red -text ""]
+	pack [button .sys.ok -text "Ok" -command "set g(wait) 1" \
+		-state disabled]
+	while 1 {
+	    set g(wait) 0; tkwait variable g(wait)
+	    if $g(root)<10 {exit 0}
+	    catch {exec sudo -k}
+	    if [iceTestSudo 0 1 .sys] {
+		.sys.msg configure -text \
+			"Wrong password (or not in /etc/sudoers)"
+		after 5000 {catch {.sys.msg configure -text ""}}
+	    } else {
+		.sys.msg configure -text ""
+		if $g(root)==20 {
+		    proc __resudo__ {} {
+			catch {exec sudo -S true < /dev/null}
+			after 60000 __resudo__
+		    }
+		    __resudo__
+		}
+		after 500 {destroy .sys}
+		break
+	    }
+	}
+    }
+
+    set text ""
+    if !$tkinfo {
+	set text "Since tkinfo isn't installed, you won't able to read help"
+    } elseif !$infofile {
+	set text "There is no info file in \$SOURCEDIR, can't show help"
+    }
+    if [string length $text] {
+	tk_dialog .dia "Warning" $text "" 0 "Ok"
+    }
+}
+
+##############################################################################
+##############################################################################
+##############################################################################
+#### Main: configuration management
+
+wm withdraw .
+
+# source configurations
+foreach f "\"$env(HOME)/.etlinux-ice\" \"./.etlinux-ice\"" {
+    if [file readable $f] {
+	iceMessage "Reading configuration file $f"
+	source $f
+    }
+}
+
+#### set defaults if still unset
+iceDefault canvashei 600
+iceDefault width:msg  80
+iceDefault height:msg 10
+iceDefault width:comp  80
+iceDefault height:comp 30
+iceDefault width:dep  50
+iceDefault height:dep 20
+iceDefault width:diag  40
+iceDefault height:diag 40
+iceDefault arrayelement "#811"
+iceDefault arrayvalue "#063"
+iceDefault arraynewelement "#f22"
+iceDefault arraynewvalue "#0c6"
+iceDefault multicompile 0
+iceDefault autosudo 0
+iceDefault scaninterval 2000
+iceDefault lockedconfig "-background #c88"
+iceDefault selbutton:bg         "#9d9"
+iceDefault selbutton:activebg   "#aea"
+iceDefault selbutton:disabledbg "#daa"
+iceDefault curr_config "Etlinux"
+iceDefault curr_platform "host-native"
+set env(PLATFORM) $c(curr_platform)
+# get the application default for an unlocked checkbutton
+pack [checkbutton .b]
+iceDefault unlockedconfig [concat "-background [.b cget -background]" \
+	"-activebackground [.b cget -activebackground]"]
+destroy .b
+
+# ask for all size things
+foreach n {unp bui bin} {
+    foreach m {0 1} {
+	iceDefault ask:$n:$m 1
+    }
+}
+
+# message attributes and regexps selecting them
+iceDefault tag:info        "-foreground blue"
+iceDefault tag:info2       "-foreground springgreen4"
+iceDefault tag:error       "-foreground red"
+iceDefault tag:action      \
+	"-foreground springgreen4 -background gray95"
+iceDefault regexp:make     {{^make[][0-9]*: [^*]} info}
+iceDefault regexp:msg1     {{^ *====*} info}
+iceDefault regexp:msg2     {{^ *----*} info2}
+iceDefault regexp:makeerr  {{^make[][0-9]*: \*} error}
+iceDefault regexp:gccerr   {{^[^ \t]*:[0-9]+:} error}
+iceDefault regexp:action   {{^20[0-9][0-9]-[0-9].-.. ..:..:.. } action}
+
+# select what attributes to use (so a .etlinux-ice can disable some)
+iceDefault regexps "make msg1 msg2 makeerr gccerr action"
+
+##############################################################################
+#### Main: initialization stuff
+
+# choose a source directory (cfg file has priority)
+if [info exists env(SOURCEDIR)] {
+    iceDefault src $env(SOURCEDIR)
+}
+iceDefault src [file dirname $argv0]
+# remember if this is a source directory
+if [llength [glob -nocomplain ettcl*.build]] {
+    set g(srchere) 1
+} else {
+    set g(srchere) 0
+}
+
+# and if needed, use it
+if ![info exists c(src)]&&$g(srchere) {
+    set c(src) .
+}
+
+iceMessage "Target directory is \".\" (\"[pwd]\")"
+if [info exists c(src)] {
+    iceMessage "Source directory is \"$c(src)\""
+} else {
+    iceMessage "Can't find a source directory"
+    iceMessage "** Please set SOURCEDIR in your environment"
+}
+# export it to make, in case it's not already there
+set env(SOURCEDIR) $c(src)
+
+
+# ask the user for a source directory, until a valid one is entered
+if ![info exists c(src)] {
+    #... Hmm... FIXME...
+    puts stderr "Please run in the source directory or export SOURCEDIR"
+    exit 1
+}
+set g(tools) $c(src)/tools
+
+# link the makefile, if this is not a source dir
+if !$g(srchere) {
+    file delete Makefile
+    exec ln -s $c(src)/Makefile .
+    if ![file readable Makefile] {
+	iceMessage "No valid Makefile in $c(src)"
+	file delete Makefile
+	exit 1
+    }
+}
+
+
+##############################################################################
+### Done.
+
+iceSystemConfig
+iceSetupMain
+iceLockButtonInit
+iceScandirInit
+iceUseDependencies
+iceScandir
+icePlatformsInit
+iceConfigsInit
+
+wm deiconify .
+iceToplevel .out "Compilation Messages" comp
+iceMessageWin .m
+

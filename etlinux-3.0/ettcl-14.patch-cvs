@@ -1,0 +1,141 @@
+Index: ettcl/ChangeLog
+diff -u ettcl/ChangeLog:1.45 ettcl/ChangeLog:1.47
+--- ettcl/ChangeLog:1.45	Mon Aug  2 10:13:20 2004
++++ ettcl/ChangeLog	Tue Feb  8 16:08:14 2005
+@@ -1,3 +1,19 @@
++2005-02-08  Davide Ciminaghi  <ciminaghi@prosa.it>
++
++	* Applications/init/sbin: added halt and reboot as ettclsh scripts
++	* Documentation update
++
++2005-02-04  Davide Ciminaghi  <ciminaghi@prosa.it>
++
++	* Applications/init/etc/init.d/respawn/S90interact: added ability to 
++	run a user defined shell.
++	* Documentation update.
++
++2005-02-02  Davide Ciminaghi  <ciminaghi@prosa.it>
++
++	* Applications/telnetd/telnetd: added ability to run a 
++	user defined shell when a new connection is accepted.
++
+ 2004-08-02  Alessandro Rubini  <rubini@linux.it>
+ 
+ 	**** RELEASED AS VERSION 14.0
+@@ -9,7 +25,7 @@
+ 2004-06-30  Davide Ciminaghi  <ciminaghi@prosa.it>
+ 
+ 	* tclProsaCmd.c : fixed scheduler command
+-	doc/doc.ettcl: updoated scheduler command documentation.
++	doc/doc.ettcl: updated scheduler command documentation.
+ 
+ 2003-11-27  Davide Ciminaghi  <rubini@linux.it>
+ 
+Index: ettcl/Applications/init/etc/init.d/respawn/S90interact
+diff -u ettcl/Applications/init/etc/init.d/respawn/S90interact:1.3 ettcl/Applications/init/etc/init.d/respawn/S90interact:1.4
+--- ettcl/Applications/init/etc/init.d/respawn/S90interact:1.3	Tue Dec 11 15:11:16 2001
++++ ettcl/Applications/init/etc/init.d/respawn/S90interact	Fri Feb  4 15:53:00 2005
+@@ -1,5 +1,20 @@
++
++default_opt console:dev       "/dev/ttyS0"
++default_opt console:shell     "/bin/bash"
++
+ after 1000; # wait for system to stabilize...
+ 
++if [file executable $options(console:shell)] {
++	if { ![catch {set F [open $options(console:dev) r+ ]} ] } {
++		sys_dup $F stdin
++		sys_opentty
++		sys_dup $F stdout
++		sys_dup $F stderr
++		close $F
++		newcmdname "$options(console:shell)"
++		sys_exec $options(console:shell)
++	}
++} 
+ newcmdname "console-interaction"
+ set prompt "% "
+ puts -nonewline stdout $prompt; flush stdout
+Index: ettcl/Applications/init/sbin/halt
+diff -u /dev/null ettcl/Applications/init/sbin/halt:1.1
+--- /dev/null	Tue Feb  8 16:10:37 2005
++++ ettcl/Applications/init/sbin/halt	Tue Feb  8 15:37:05 2005
+@@ -0,0 +1,2 @@
++#!/bin/ettclsh
++sys_kill -USR1 1
+Index: ettcl/Applications/init/sbin/reboot
+diff -u /dev/null ettcl/Applications/init/sbin/reboot:1.1
+--- /dev/null	Tue Feb  8 16:10:37 2005
++++ ettcl/Applications/init/sbin/reboot	Tue Feb  8 15:37:05 2005
+@@ -0,0 +1,2 @@
++#!/bin/ettclsh
++sys_kill -USR2 1
+Index: ettcl/Applications/telnetd/telnetd
+diff -u ettcl/Applications/telnetd/telnetd:1.7 ettcl/Applications/telnetd/telnetd:1.8
+--- ettcl/Applications/telnetd/telnetd:1.7	Tue Jun 10 18:04:39 2003
++++ ettcl/Applications/telnetd/telnetd	Wed Feb  2 14:31:00 2005
+@@ -14,7 +14,7 @@
+ default_opt telnetd:logfmt     $options(logfmt)
+ default_opt         hostsfile  "/etc/hosts.allow"
+ default_opt telnetd:hostsfile  $options(hostsfile)
+-
++default_opt telnetd:shell      "/bin/bash"
+ 
+ # override the default unknown procedure
+ proc unknown args {
+@@ -132,7 +132,11 @@
+ 		catch {close $f}
+ 	    }
+ 	}
+-	myserver
++	if [file executable $options(telnetd:shell)] {
++		sys_exec $options(telnetd:shell)
++	} else {	
++		myserver
++	}
+     } else {
+ 	# parent: add file events
+ 	close $slave
+Index: ettcl/doc/doc.ettcl
+diff -u ettcl/doc/doc.ettcl:1.25 ettcl/doc/doc.ettcl:1.27
+--- ettcl/doc/doc.ettcl:1.25	Mon Aug  2 10:11:09 2004
++++ ettcl/doc/doc.ettcl	Tue Feb  8 15:53:40 2005
+@@ -1547,6 +1547,8 @@
+ @var{reboot} procedures, that simply send a signal to @var{init}.
+ If you have no console access to see shutdown messages, you can count
+ shutdown to be over in 5 seconds at most.
++If you're working with bash or some other shell, @var{halt} and @var{reboot} 
++are provided as a couple of trivial ettclsh scripts under @file{/sbin}.
+ 
+ @c ==========================================================================
+ @node Httpd and Phttpd, Cmdd, Network configuration scripts, Applications
+@@ -2397,9 +2399,9 @@
+ 
+ @cindex telnetd
+ @cindex full-screen
+-The @var{telnetd} application is a daemon that execute Ettcl
+-commands running a subprocess per TCP connection. Such subprocess
+-is run ina virtual terminal, so you can call @var{vi} or other
++The @var{telnetd} application is a daemon that executes Ettcl
++commands (or a user-defined shell) running a subprocess per TCP connection. 
++Such subprocess is run in a virtual terminal, so you can call @var{vi} or other
+ full-screen programs from the shell.  The server must be run
+ by the superuser (otherwise, it wouldn't be able to open a tty pair),
+ and you should use @var{telnetc} as a client. The daemon listens
+@@ -2488,6 +2490,16 @@
+         an EtLinux system you might want to set @code{options(logfmt)}
+         from within @file{/etc/init.d/options}, so all servers will use
+         the same format.
++
++@item options(telnetd:shell)
++@cindex telnetd shell
++@cindex user defined shell for telnetd
++
++        The path of a shell launched when a new connection is 
++        accepted. Default value is @file{/bin/bash}. If 
++        @code{$options(telnetd:shell)}
++        cannot be executed (i.e. bash has not been compiled), 
++        ettclsh is used instead.
+ 
+ @end table
+ 

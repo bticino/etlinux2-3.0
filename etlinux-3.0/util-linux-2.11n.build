@@ -1,0 +1,33 @@
+#
+# Building util-linux
+#
+requires: ncurses
+
+build-begin
+	ARCH=$ARCH CC="$CC -I`pwd`/../ncurses-5.2/include \
+	-L`pwd`/../ncurses-5.2/lib" ./configure --host=$TARGETSYSTEM
+	make ARCH=$ARCH
+build-end
+
+install-begin
+	files="login-utils/login login-utils/passwd \
+		misc-utils/kill text-utils/reset \
+		text-utils/clear" ; \
+	filess="fdisk/fdisk fdisk/sfdisk" ; \
+	for n in $files $filess; do ${STRIP:-strip} $n 2> /dev/null; done
+	for n in $files;  do install -c $n $TARGET/bin;  done
+	for n in $filess; do install -c $n $TARGET/sbin; done
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li>In <code>/sbin/</code>, <code>insmod</code>, <code>rmmod</code>,
+	<code>lsmod</code> and <code>modprobe</code> come from __PACKAGE__.
+	They are all links to the same executable image.
+
+htmllist-end -----------------------------------------------------

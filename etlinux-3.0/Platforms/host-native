@@ -1,0 +1,11 @@
+
+# This platform is used to build a target system with the same libc
+# as the host where the system is compiled.
+
+# Default CC etc, but force a package for libc, assume it's glibc
+CROSS_COMPILE =  
+PLATFORMPKG := host-glibc
+
+# native arch, native target
+ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/)
+TARGETSYSTEM := $(ARCH)-generic-linux

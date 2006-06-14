@@ -1,0 +1,15 @@
+diff -Naur elvis-tiny-1.4.orig/Makefile elvis-tiny-1.4/Makefile
+--- elvis-tiny-1.4.orig/Makefile	Thu Jul  8 10:17:46 2004
++++ elvis-tiny-1.4/Makefile	Thu Jul  8 10:18:11 2004
+@@ -253,7 +253,11 @@
+ EXTRA2=
+ LIBS=	-L../termcap-2.0.8 -ltermcap
+ BIN=	/usr/local/bin
++ifeq ($(ARCH), i386)
+ CFLAGS=	-DM_SYSV -s -O2 -malign-jumps=1 -malign-loops=1 -malign-functions=1
++else
++CFLAGS= -DM_SYSV -s -O2
++endif
+ OF=	-o 
+ RF=	-c
+ DATE=	-DDATE=\'\"`date`\"\'

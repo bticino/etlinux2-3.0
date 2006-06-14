@@ -1,0 +1,65 @@
+#!/bin/ettclsh
+# this is a special /sbin/init to re-root all the system under tmpfs
+
+set err 0
+# if the $TARFILE isn't valid, go interactive
+if ![info exists env(TARFILE)] {
+    puts stderr "$argv0: can't find TARFILE in environment"
+    incr err
+} else {
+    # if there's not leading /, add it, then check
+    if ![string match /* $env(TARFILE)] {set env(TARFILE) /$env(TARFILE)}
+    if ![file readable $env(TARFILE)] {
+	puts stderr "$argv0: can't find file \"$env(TARFILE)\""
+	incr err
+    }
+}
+if $err {
+    # this is the same as S90interact in the standard init
+    set prompt "% "
+    puts -nonewline stdout $prompt; flush stdout
+    fileevent stdin readable \
+	    [list interact_oneline stdin $prompt stdin stdout stderr exit]
+    vwait forever
+}
+
+puts "$argv0: preparing to re-root under tmpfs"; 
+
+# run fork/exec to avoid using any temporary file
+
+if ![sys_fork] {
+    sys_exec mount -n -t tmpfs memory /mnt
+}
+sys_wait
+puts -nonewline "mounted new root, extracting TAR file..."; flush stdout
+
+if ![sys_fork] {
+    cd /mnt
+    sys_exec tar xzf $env(TARFILE)
+}
+sys_wait
+puts " done"
+
+if [file isdir /custom] {
+    puts "Copying custom files"
+    sys_pipe in out
+    if ![sys_fork] {
+	close $out
+	sys_dup $in stdin; close $in
+	cd /mnt
+	sys_exec tar xvf -
+    }
+    if ![sys_fork] {
+	close $in
+	sys_dup $out stdout; close $out
+	cd /custom
+	sys_exec tar cf - .
+    }
+    close $in; close $out
+    sys_wait
+    sys_wait
+}
+
+puts "Changing root filesystem"
+sys_exec /sbin/mini-pivot /mnt /sbin/init
+

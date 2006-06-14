@@ -1,0 +1,11 @@
+--- ./ifconfig.c.orig	2006-03-08 16:52:31.000000000 +0100
++++ ./ifconfig.c	2006-03-08 15:44:41.000000000 +0100
+@@ -440,7 +440,7 @@
+ 				++goterr;
+ 			}
+ 		}
+-	LOOP:
++	LOOP: ;
+ 	} /* end of while-loop */
+ 
+ 	return goterr;

@@ -1,0 +1,24 @@
+--- ./aclocal.m4.orig	2006-03-13 20:37:00.000000000 +0100
++++ ./aclocal.m4	2006-03-13 20:38:05.000000000 +0100
+@@ -1629,6 +1629,9 @@
+       if test -r $i/lib/libssl.a -o -r $i/lib/libssl.$SHLIB_SUFFIX_NAME; then
+         OPENSSL_LIBDIR=$i/lib
+       fi
++      if test -r $i/libssl.a -o -r $i/libssl.$SHLIB_SUFFIX_NAME; then
++        OPENSSL_LIBDIR=$i
++      fi
+       test -n "$OPENSSL_INCDIR" && test -n "$OPENSSL_LIBDIR" && break
+     done
+ 
+--- ./configure.orig	2006-03-13 20:38:21.000000000 +0100
++++ ./configure	2006-03-13 20:39:00.000000000 +0100
+@@ -16061,6 +16061,9 @@
+       if test -r $i/lib/libssl.a -o -r $i/lib/libssl.$SHLIB_SUFFIX_NAME; then
+         OPENSSL_LIBDIR=$i/lib
+       fi
++      if test -r $i/libssl.a -o -r $i/libssl.$SHLIB_SUFFIX_NAME; then
++        OPENSSL_LIBDIR=$i
++      fi
+       test -n "$OPENSSL_INCDIR" && test -n "$OPENSSL_LIBDIR" && break
+     done
+ 

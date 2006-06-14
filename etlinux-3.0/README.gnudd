@@ -1,0 +1,93 @@
+Notes on etlinux-3.0
+
+**** Upgrading bash to a newer version:
+
+Trying debian sources:
+
+=================================================================
+
+ciminaghi@dellaptop:/tmp$ apt-get source bash
+Reading Package Lists... Done
+Building Dependency Tree... Done
+Need to get 1973kB of source archives.
+Get:1 http://ftp.it.debian.org woody/main bash 2.05a-11 (dsc) [960B]
+Get:2 http://ftp.it.debian.org woody/main bash 2.05a-11 (tar) [1797kB]
+Get:3 http://ftp.it.debian.org woody/main bash 2.05a-11 (diff) [175kB]
+Fetched 1973kB in 2s (835kB/s)
+dpkg-source: extracting bash in bash-2.05a
+
+ciminaghi@dellaptop:/tmp$ cd bash-2.05a/
+ciminaghi@dellaptop:/tmp/bash-2.05a$ export CC=/opt/snapgear-toolchain/bin/arm-linux-gcc
+ciminaghi@dellaptop:/tmp/bash-2.05a$ export RANLIB=/opt/snapgear-toolchain/bin/arm-linux-ranlibchecking build system type... i686-pc-linux-gnu
+checking host system type... arm-generic-linux-gnu
+
+Beginning configuration for bash-2.05a for arm-generic-linux-gnu
+
+checking for arm-generic-linux-gcc... /opt/snapgear-toolchain/bin/arm-linux-gcc
+checking for C compiler default output... a.out
+checking whether the C compiler works... yes
+checking whether we are cross compiling... yes
+
+ciminaghi@dellaptop:/tmp/bash-2.05a$ export AR=/opt/snapgear-toolchain/bin/arm-linux-ar
+ciminaghi@dellaptop:/tmp/bash-2.05a$ ./configure --host=arm-generic-linux --build=i686-linux
+.....
+checking for working alloca.h... yes
+checking for alloca... yes
+checking whether getpgrp takes no argument... yes
+checking whether setvbuf arguments are reversed... configure: error: cannot run test program while cross compiling
+
+==================================================================
+
+
+Looks like bash (debian sources) cannot be cross-compiled.
+
+Trying snapgear sources (taken from decio:/opt/snapgear/sphid-trees/snapgear/user/bash):
+
+===================================================================
+
+<untar bash sources under /tmp/user>
+cd /tmp/user/bash
+./config.status
+export CC=/opt/snapgear-toolchain/bin/arm-linux-gcc
+export AR=/opt/snapgear-toolchain/bin/arm-linux-ar
+export RANLIB=/opt/snapgear-toolchain/bin/arm-linux-ranlib
+export ROOTDIR=/tmp 
+make
+
+...
+
+/opt/snapgear-toolchain/bin/arm-linux-gcc -L./builtins -L./lib/readline -L./lib/readline -L./lib/glob -L./lib/tilde -L./lib/malloc -L./lib/sh -L./lib/termcap  -rdynamic  -I./lib/termcap -o bash shell.o eval.o y.tab.o general.o make_cmd.o print_cmd.o  dispose_cmd.o execute_cmd.o variables.o copy_cmd.o error.o expr.o flags.o jobs.o subst.o hashcmd.o hashlib.o mailcheck.o trap.o input.o unwind_prot.o pathexp.o sig.o test.o version.o alias.o array.o braces.o bracecomp.o bashhist.o bashline.o siglist.o list.o stringlib.o locale.o findcmd.o redir.o pcomplete.o pcomplib.o syntax.o xmalloc.o -lbuiltins -lsh -lreadline -lhistory ./lib/termcap/libtermcap.a -lglob -ltilde -lmalloc  
+ls -l bash
+-rwxrwxr-x    1 ciminagh ciminagh   896311 May  3 12:36 bash
+size bash
+   text    data     bss     dec     hex filename
+ 756175   21496   20388  798059   c2d6b bash
+
+=================================================================
+
+Success !
+
+But config.status says:
+
+#! /bin/sh
+# Generated automatically by configure.
+# Run this file to recreate the current configuration.
+# This directory was configured as follows,
+# on host phil:
+#
+# ./configure  --enable-static-link
+#
+# Compiler output produced by configure, useful for debugging
+# configure, is in ./config.log if it exists.
+
+
+It looks like bash was compiled natively and then config.status was 
+slightly modified to get the package to compile on the host machine.
+
+For example ROOTDIR was added in config.status:
+
+s%@BUILD_DIR@%$(ROOTDIR)/user/bash%g
+
+This allows moving the sources around on the host without breaking the 
+Makefiles.
+

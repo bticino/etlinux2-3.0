@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+# set -x
+
+# The current directory is the root of the target tree
+
+for n in `find . -type f -print`; do
+    # ignore non-ELF files
+    file $n | grep ELF > /dev/null || continue
+    # ignore modules (generically, object files)
+    echo $n | grep '\.o$' > /dev/null && continue
+    echo "Stripping $n"
+    ${STRIP:-strip} $n
+done

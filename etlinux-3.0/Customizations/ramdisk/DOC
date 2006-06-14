@@ -1,0 +1,13 @@
+
+This customization creates a compressed image of an ext2 filesystem.
+The output file is called "ramdisk.gz" irrespective of the configuration
+name (as calling if <config>.gz would be easily misinterpreted).
+
+The size of the filesystem is inherited from the environment variable
+RAMDISK_SIZE, that must be the number of kilobytes to use. If no such
+variable is set, the script selects 1MB more than the size of
+installed data.
+
+This customization is meant as an example to be adapted to your own
+needs.
+

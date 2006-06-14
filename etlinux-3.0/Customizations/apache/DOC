@@ -1,0 +1,20 @@
+This customization adds some apache support files (apache.conf, mime.types, 
+apache startup script, ...), and creates the proper user and group in 
+/etc/passwd and /etc/group. Finally, the DocumentRoot directory is created 
+and Etlinux.html is copied into it.
+
+The following apache configuration items can be customized by properly  
+setting some environment variables:
+
+* DocumentRoot : by default it is set to /home/www . Export 
+  APACHE_DOCUMENT_ROOT to override the default value.
+  
+* ServerAdmin : by default it is set to root. Export 
+  APACHE_SERVER_ADMIN to override the default value
+
+* ServerName : by default it is set to localhost. Export 
+  APACHE_SERVER_NAME to override the default value.
+
+
+WARNING: the apache config file contained in this customization 
+does not load modssl.

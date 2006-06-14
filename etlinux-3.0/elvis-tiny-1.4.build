@@ -1,0 +1,28 @@
+#
+# Building elvis-tiny
+#
+requires: ncurses 
+provides: vi
+
+# compiling is easy
+build-begin
+	make
+	${STRIP:-strip} elvis
+build-end
+
+# and installing is trivial
+install-begin
+	install -d $TARGET/bin
+	install	-c elvis $TARGET/bin/vi
+install-end
+
+# Nothing about the description of the system here
+htmldesc-begin
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/bin/elvis</code> comes from __PACKAGE__.
+
+htmllist-end -----------------------------------------------------

@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# a simple script to check that CC is actually compiling with libc5
+
+madedir=0
+if [ ! -d tmp ]; then
+    mkdir tmp
+    madedir=1
+fi
+
+C=tmp/testlibc5.c
+O=tmp/testlibc5
+E=tmp/testlibc5.err
+
+cleanup()
+{
+    rm $C $O $E
+    if [ $madedir -ne 0 ]; then rmdir tmp; fi
+    exit $1
+}
+
+echo "int main() {}" > $C
+
+if ! ${CC=cc} $C -o $O 2> $E; then
+    echo "*** Error in compiling a simple program with \"$CC\"" >& 2
+    cat $E >& 2
+    cleanup 1
+fi
+
+if ! ldd $O | grep libc.so.5 > /dev/null; then
+    echo "*** The compiler \"$CC\" doesn't link with libc5" >& 2
+    cleanup 1
+fi
+
+error=0
+
+echo -e "#include <curses.h>\nint main() {}" > $C
+if ! ${CC=cc} $C -lcurses -o $O 2> $E; then
+    echo "*** There is no libcurses installed for libc5" >& 2
+    echo "*** You'd better \"apt-get install ncurses3.0-altdev\"" >& 2
+    cat $E >& 2
+    error=1
+fi
+
+echo -e "#include <readline/readline.h>\nint main() {}" > $C
+if ! ${CC=cc} $C -lreadline -o $O 2> $E; then
+    echo "*** There is no libreadline installed for libc5" >& 2
+    echo "*** You'd better \"apt-get install libreadline2-altdev\"" >& 2
+    cat $E >& 2
+    error=1
+fi
+
+
+
+cleanup $error
