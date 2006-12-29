@@ -1,0 +1,11 @@
+--- ./route.c.orig	2001-10-27 01:08:05.000000000 +0200
++++ ./route.c	2006-11-24 12:46:40.000000000 +0100
+@@ -22,7 +22,7 @@
+ #include <sys/types.h>
+ #include <sys/ioctl.h>
+ #include <sys/socket.h>
+-#include <net/route.h>
++#include <linux/route.h>
+ #include <linux/param.h>  // HZ
+ #include <netinet/in.h>
+ #include <arpa/inet.h>

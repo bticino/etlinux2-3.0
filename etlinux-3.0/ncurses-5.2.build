@@ -6,8 +6,8 @@
 build-begin
 	export CC=${CC-:gcc} CXX=${CXX-:c++} AR=${AR-:ar} \
 	RANLIB=${RANLIB:-ranlib} HOSTCC=gcc 
-	./configure --without-ada --with-shared --host=$TARGETSYSTEM
-	make CC="$CC" CXX="$CXX" HOSTCC=gcc
+	HOSTCCFLAGS="-O3 -Wall -I../ncurses -I.  -DNDEBUG -D_GNU_SOURCE -I. -I../include -DHAVE_CONFIG_H" ./configure --without-ada --with-shared --host=$TARGETSYSTEM
+	make CC="$CC" CXX="$CXX" HOSTCC=gcc HOSTCCFLAGS="-O3 -Wall -I../ncurses -I.  -DNDEBUG -D_GNU_SOURCE -I. -I../include -DHAVE_CONFIG_H"
 build-end
 
 # and installing is trivial

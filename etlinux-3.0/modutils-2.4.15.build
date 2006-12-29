@@ -3,7 +3,7 @@
 #
 # compiling is easy
 build-begin
-	HOSTCC=gcc ./configure --host=$TARGETSYSTEM
+	HOSTCC=gcc HOSTCFLAGS="-I./../include -D_GNU_SOURCE  -DCONFIG_ROOT_CHECK_OFF=0   -DELF_MACHINE_H='"elf_arm.h"' -DARCH_arm -DCOMBINE_rmmod -DCOMBINE_modprobe -DCOMBINE_lsmod -DCOMBINE_ksyms -DCOMBINE_kallsyms" ./configure --host=$TARGETSYSTEM
 	make CC="$CC" || exit 1
 	${STRIP:-strip} insmod/insmod || exit 1
 build-end

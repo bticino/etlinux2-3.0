@@ -1,0 +1,14 @@
+--- ./tclProsaNet.c.orig	2001-11-26 15:14:17.000000000 +0100
++++ ./tclProsaNet.c	2006-11-06 14:14:36.000000000 +0100
+@@ -28,9 +28,9 @@
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/ioctl.h>
+-#include <net/if.h>
++#include <linux/if.h>
+ #include <arpa/inet.h>
+-#include <net/route.h>
++#include <linux/route.h>
+ #include <netinet/in.h>
+ #include <netinet/ip.h>
+ #include <netinet/udp.h>
