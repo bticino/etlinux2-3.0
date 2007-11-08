@@ -1,0 +1,72 @@
+#
+# Not-building libc, use the one from the compiler instead
+#
+provides: libc
+provides: libc6
+source: _empty
+
+build-begin
+	true
+build-end
+
+# Assume the target wants a pretty full setup, so add libpthreads etc
+install-begin
+	CC=${CC:-gcc}
+	D=`/bin/pwd`
+
+	cd $(dirname $($CC -print-file-name=libc.a))
+	install -d $TARGET/lib
+	for n in libc.so.6 libcrypt.so.1 libdl.so.2 libm.so.6 libnss*.so.2 \
+			libresolv.so.2 libutil.so.1 libpthread.so.0 \
+			libnsl.so.1 librt.so.1 \
+			libstdc++.so.6 libgcc_s.so libjpeg.so; do
+		cp -a $n $(readlink $n) $TARGET/lib
+		${STRIP:-strip} $TARGET/lib/$(readlink $n)
+	done
+
+	# ld-linux can be version 2 (i386) or 1 (ppc); find one and then break
+	for n in ld-linux.so.2 ld-linux.so.1 ld.so.2 ld.so.1; do
+		if [ -f $n ]; then
+			cp -a $n $(readlink $n) $TARGET/lib
+			break
+		fi
+	done
+
+	# copy second link
+	for n in libstdc++.so; do
+		if [ -f $n ]; then
+			cp -a $n $TARGET/lib
+			break
+		fi
+	done
+
+	install -d $TARGET/sbin
+	cp -a ../sbin/ldconfig $TARGET/sbin
+
+	install -d $TARGET/bin
+	cp -a ../bin/ldd $TARGET/bin
+
+	# for etc stuff, go in the local host
+	cd /etc
+	install -d $TARGET/etc
+	cp -a nsswitch.conf protocols services $TARGET/etc
+
+	cd $D
+install-end
+
+htmldesc-begin
+
+<h2>libc</h2>
+
+<p>The C library used in this version of Etlinux is copied
+from the host system where it was compiled.
+
+htmldesc-end
+
+# And this is the listing item
+htmllist-begin ---------------------------------------------------
+
+<li><code>/lib/libc</code> and other files are copied
+        as instructed in the package __PACKAGE__.
+
+htmllist-end -----------------------------------------------------
