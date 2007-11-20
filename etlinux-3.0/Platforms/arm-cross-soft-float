@@ -15,7 +15,7 @@ ARCH := arm
 TARGETSYSTEM := arm-generic-linux
 
 # use the glibc that comes with the compiler
-PLATFORMPKG := compiler-glibc
+PLATFORMPKG := compiler-glibc-soft-3.3.2
 
 # Where libraries are placed on the host, for calling $LD alone
 ETLINUX_LDFLAGS := -L$(shell dirname `$(CC) -print-file-name=libc.so`)
