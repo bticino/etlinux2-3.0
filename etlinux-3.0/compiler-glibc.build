@@ -18,7 +18,7 @@ install-begin
 	install -d $TARGET/lib
 	for n in libc.so.6 libcrypt.so.1 libdl.so.2 libm.so.6 libnss*.so.2 \
 			libresolv.so.2 libutil.so.1 libpthread.so.0 \
-			libnsl.so.1 librt.so.1 ; do
+			libnsl.so.1 librt.so.1 libstdc++.so.6 libgcc_s.so.1; do
 		cp -a $n $(readlink $n) $TARGET/lib
 		${STRIP:-strip} $TARGET/lib/$(readlink $n)
 	done
