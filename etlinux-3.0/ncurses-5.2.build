@@ -4,8 +4,8 @@
 
 # compiling is easy
 build-begin
-	export CC=${CC-:gcc} CXX=${CXX-:c++} AR=${AR-:ar} \
-	RANLIB=${RANLIB:-ranlib} HOSTCC=gcc 
+	export CC=${CROSS_COMPILE}gcc CXX=${CROSS_COMPILE}c++ AR=${CROSS_COMPILE}ar \
+	RANLIB=${CROSS_COMPILE}ranlib HOSTCC=gcc 
 	HOSTCCFLAGS="-O3 -Wall -I../ncurses -I.  -DNDEBUG -D_GNU_SOURCE -I. -I../include -DHAVE_CONFIG_H" ./configure --without-ada --with-shared --host=$TARGETSYSTEM
 	make CC="$CC" CXX="$CXX" HOSTCC=gcc HOSTCCFLAGS="-O3 -Wall -I../ncurses -I.  -DNDEBUG -D_GNU_SOURCE -I. -I../include -DHAVE_CONFIG_H"
 build-end

@@ -5,7 +5,7 @@ requires: ncurses
 
 # compiling is easy
 build-begin
-	export CC=${CC:-gcc}
+	export CC=${CROSS_COMPILE}gcc
 	if [ -f Makefile ] ; then \
 		true ; \
 	else \
