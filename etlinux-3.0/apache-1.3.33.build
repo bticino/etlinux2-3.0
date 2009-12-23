@@ -7,11 +7,13 @@ provides: httpd
 
 # compiling is easy: normal compile plus build a static executable
 build-begin
-	export RANLIB=${RANLIB:-ranlib}
-	export LD_SHLIB="${LD:-ld} $ETLINUX_LDFLAGS"
+#	export RANLIB=${RANLIB:-ranlib}
+	export RANLIB=${CROSS_COMPILE}-ranlib
+	export LD_SHLIB="${CROSS_COMPILE}-ld $ETLINUX_LDFLAGS"
 	export LIBGDBM_DIR=$BUILDDIR/gdbm-1.7.3
-	export CC=${CC:-gcc}
-	export HOSTCC=gcc
+#	export CC=${CC:-gcc}
+	export CC=${CROSS_COMPILE}gcc
+	export HOSTCC=${CROSS_COMPILE}gcc
 	./configure --target=apache --with-layout=Debian \
 	        --enable-suexec --suexec-caller=www-data \
 	        --suexec-docroot=/var/www --includedir=/$inc \
